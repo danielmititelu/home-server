@@ -1,0 +1,70 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    network_mode: host            # discovery, mDNS, SSDP, BLE, etc.
+    privileged: true              # udev/USB access; simplest path on Pi
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - /srv/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      # enable Bluetooth integrations (optional but handy)
+      - /run/dbus:/run/dbus:ro
+    devices:
+      - /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_382a1ce5ff73ef1193e7e71e313510fd-if00-port0:/dev/ttyUSB-Zigbee
+
+  esphome:
+    image: ghcr.io/esphome/esphome
+    container_name: esphome
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /srv/esphome:/config
+
+  nextcloud:
+    image: nextcloud:stable
+    container_name: nextcloud
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - nc-db
+      - nc-redis
+    environment:
+      - MYSQL_HOST=nc-db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - REDIS_HOST=nc-redis
+    volumes:
+      - /srv/nextcloud/app:/var/www/html
+      - /srv/nextcloud/data:/var/www/html/data
+    networks: [appnet]
+
+  nc-db:
+    image: mariadb:11
+    container_name: nc-db
+    restart: unless-stopped
+    environment:
+      - MARIADB_DATABASE=nextcloud
+      - MARIADB_USER=nextcloud
+      - MARIADB_PASSWORD=${MYSQL_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    volumes:
+      - /srv/nextcloud/db:/var/lib/mysql
+    networks: [appnet]
+
+  nc-redis:
+    image: redis:7
+    container_name: nc-redis
+    restart: unless-stopped
+    volumes:
+      - /srv/nextcloud/redis:/data
+    networks: [appnet]
+
+networks:
+  appnet:
+    driver: bridge
