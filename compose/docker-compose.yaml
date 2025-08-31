@@ -43,6 +43,20 @@ services:
       - /srv/nextcloud/data:/var/www/html/data
     networks: [appnet]
 
+  glance:
+    image: glanceapp/glance
+    container_name: glance
+    restart: unless-stopped
+    volumes:
+      - /srv/glance/config:/app/config
+      - /srv/glance/assets:/app/assets
+      - /etc/localtime:/etc/localtime:ro
+      # Optionally, also mount docker socket if you want to use the docker containers widget
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - 8090:8080
+    env_file: .env
+
   nc-db:
     image: mariadb:11
     container_name: nc-db
