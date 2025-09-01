@@ -3,7 +3,7 @@ My home server
 
 Init command:
 ```
-curl -fsSL https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/init.sh | bash
+curl -fsSL https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/init.sh | sudo bash
 ```
 
 Commands:

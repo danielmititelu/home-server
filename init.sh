@@ -13,7 +13,6 @@ ERR() { printf "\n\033[1;31m[✗] %s\033[0m\n" "$*"; exit 1; }
 
 # Detect target user (who should be in the docker group)
 TARGET_USER="${SUDO_USER:-${USER:-pi}}"
-[[ "$EUID" -ne 0 ]] && { LOG "Re-running as root…"; exec sudo -E bash "$0" "$@"; }
 
 LOG "Updating system packages"
 apt-get update -y
@@ -94,7 +93,7 @@ LOG ".env written at $ENV_FILE"
 # ----- Download (always overwrite) config files from GitHub -----
 
 RAW_COMPOSE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/compose/docker-compose.yaml"
-RAW_GLANCE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/glance/glance.yml"
+RAW_GLANCE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/glance/glance.yaml"
 
 DEST_COMPOSE="/srv/compose/docker-compose.yaml"
 DEST_GLANCE="/srv/glance/glance.yaml"
