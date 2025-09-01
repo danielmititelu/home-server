@@ -14,11 +14,8 @@ pages:
             title: Services
             sites:
               - title: Home Assistant
-                url: http://zero.local:8123/
+                url: http://pi.local:8123/
                 icon: si:homeassistant
               - title: Next cloud
-                url: http://zero.local:8080
-                icon: si:nextcloud
-              - title: Next cloud
-                url: http://zero.local:8080
+                url: http://pi.local:8080
                 icon: si:nextcloud
