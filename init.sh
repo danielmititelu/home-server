@@ -93,10 +93,10 @@ LOG ".env written at $ENV_FILE"
 # ----- Download (always overwrite) config files from GitHub -----
 
 RAW_COMPOSE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/compose/docker-compose.yaml"
-RAW_GLANCE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/glance/glance.yaml"
+RAW_GLANCE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/glance/glance.yml"
 
 DEST_COMPOSE="/srv/compose/docker-compose.yaml"
-DEST_GLANCE="/srv/glance/glance.yaml"
+DEST_GLANCE="/srv/glance/config/glance.yml"
 
 download_overwrite() {
   local url="$1" dest="$2"
