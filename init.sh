@@ -40,7 +40,7 @@ LOG "Creating /srv folder layout"
 mkdir -p \
   /srv/compose \
   /srv/homeassistant/config \
-  /srv/nextcloud/{app,data,db,redis} \
+  /srv/nextcloud/{html,config,data,custom_apps,themes,db,redis} \
   /srv/esphome \
   /srv/glance
 

@@ -13,7 +13,8 @@ services:
       # enable Bluetooth integrations (optional but handy)
       - /run/dbus:/run/dbus:ro
     devices:
-      - /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_382a1ce5ff73ef1193e7e71e313510fd-if00-port0:/dev/ttyUSB-Zigbee
+      # Use the ZIGBEE_DEVICE from .env (fails if missing)
+      - "${ZIGBEE_DEVICE:?Set ZIGBEE_DEVICE in .env}:/dev/ttyUSB-Zigbee"
 
   esphome:
     image: ghcr.io/esphome/esphome
@@ -39,8 +40,11 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - REDIS_HOST=nc-redis
     volumes:
-      - /srv/nextcloud/app:/var/www/html
+      - /srv/nextcloud/html:/var/www/html
+      - /srv/nextcloud/config:/var/www/html/config
+      - /srv/nextcloud/custom_apps:/var/www/html/custom_apps
       - /srv/nextcloud/data:/var/www/html/data
+      - /srv/nextcloud/themes:/var/www/html/themes
     networks: [appnet]
 
   glance:
