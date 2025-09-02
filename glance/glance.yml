@@ -20,5 +20,5 @@ pages:
                 url: http://pi.local:8080
                 icon: si:nextcloud
               - title: Pihole
-                url: http://pi.local:8081
+                url: http://pi.local:8081/admin/
                 icon: si:pihole

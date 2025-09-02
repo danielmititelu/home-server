@@ -40,13 +40,11 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - REDIS_HOST=nc-redis
     volumes:
-      - /srv/nextcloud/app:/var/www/html
+      - /srv/nextcloud/html:/var/www/html
+      - /srv/nextcloud/config:/var/www/html/config
+      - /srv/nextcloud/custom_apps:/var/www/html/custom_apps
       - /srv/nextcloud/data:/var/www/html/data
-      # - /srv/nextcloud/html:/var/www/html
-      # - /srv/nextcloud/config:/var/www/html/config
-      # - /srv/nextcloud/custom_apps:/var/www/html/custom_apps
-      # - /srv/nextcloud/data:/var/www/html/data
-      # - /srv/nextcloud/themes:/var/www/html/themes
+      - /srv/nextcloud/themes:/var/www/html/themes
     networks: [appnet]
 
   glance:
@@ -101,7 +99,7 @@ services:
       FTLCONF_dns_listeningMode: 'all'
     volumes:
       # For persisting Pi-hole's databases and common configuration file
-      - 'srv/pihole/etc-pihole:/etc/pihole'
+      - '/srv/pihole/etc-pihole:/etc/pihole'
       # Uncomment the below if you have custom dnsmasq config files that you want to persist. Not needed for most starting fresh with Pi-hole v6. If you're upgrading from v5 you and have used this directory before, you should keep it enabled for the first v6 container start to allow for a complete migration. It can be removed afterwards. Needs environment variable FTLCONF_misc_etc_dnsmasq_d: 'true'
       #- './etc-dnsmasq.d:/etc/dnsmasq.d'
     cap_add:
@@ -112,6 +110,36 @@ services:
       - SYS_TIME
       # Optional, if Pi-hole should get some more processing time
       - SYS_NICE
+
+  vaultwarden:
+    container_name: vaultwarden
+    image: vaultwarden/server:latest
+    restart: unless-stopped
+    ports:
+      - :8083:80
+    environment:
+      - WEBSOCKET_ENABLED=true
+    volumes:
+      - /srv/vaultwarden/:/data/
+  qbittorrent:
+    container_name: qbittorrent
+    image: lscr.io/linuxserver/qbittorrent:latest
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - WEBUI_PORT=8084
+      - TORRENTING_PORT=6881
+    volumes:
+      - /srv/qbittorrent/appdata:/config
+      - /srv/downloads:/downloads
+    ports:
+      - 8084:8084
+      - 6881:6881
+      - 6881:6881/udp
+    
+    
     
 
 networks:
