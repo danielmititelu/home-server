@@ -40,11 +40,13 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - REDIS_HOST=nc-redis
     volumes:
-      - /srv/nextcloud/html:/var/www/html
-      - /srv/nextcloud/config:/var/www/html/config
-      - /srv/nextcloud/custom_apps:/var/www/html/custom_apps
+      - /srv/nextcloud/app:/var/www/html
       - /srv/nextcloud/data:/var/www/html/data
-      - /srv/nextcloud/themes:/var/www/html/themes
+      # - /srv/nextcloud/html:/var/www/html
+      # - /srv/nextcloud/config:/var/www/html/config
+      # - /srv/nextcloud/custom_apps:/var/www/html/custom_apps
+      # - /srv/nextcloud/data:/var/www/html/data
+      # - /srv/nextcloud/themes:/var/www/html/themes
     networks: [appnet]
 
   glance:
@@ -82,6 +84,35 @@ services:
     volumes:
       - /srv/nextcloud/redis:/data
     networks: [appnet]
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8081:80/tcp"
+      - "8082:443/tcp"
+    environment:
+      TZ: 'Europe/Bucharest'
+      FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
+      # If using Docker's default `bridge` network setting the dns listening mode should be set to 'all'
+      FTLCONF_dns_listeningMode: 'all'
+    volumes:
+      # For persisting Pi-hole's databases and common configuration file
+      - 'srv/pihole/etc-pihole:/etc/pihole'
+      # Uncomment the below if you have custom dnsmasq config files that you want to persist. Not needed for most starting fresh with Pi-hole v6. If you're upgrading from v5 you and have used this directory before, you should keep it enabled for the first v6 container start to allow for a complete migration. It can be removed afterwards. Needs environment variable FTLCONF_misc_etc_dnsmasq_d: 'true'
+      #- './etc-dnsmasq.d:/etc/dnsmasq.d'
+    cap_add:
+      # See https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+      # Required if you are using Pi-hole as your DHCP server, else not needed
+      - NET_ADMIN
+      # Required if you are using Pi-hole as your NTP client to be able to set the host's system time
+      - SYS_TIME
+      # Optional, if Pi-hole should get some more processing time
+      - SYS_NICE
+    
 
 networks:
   appnet:

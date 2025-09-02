@@ -42,6 +42,7 @@ mkdir -p \
   /srv/homeassistant/config \
   /srv/nextcloud/{html,config,data,custom_apps,themes,db,redis} \
   /srv/esphome \
+  /srv/pihole/etc-pihole \
   /srv/glance
 
 chown -R "$TARGET_USER:$TARGET_USER" /srv
@@ -67,7 +68,7 @@ else
   fi
 fi
 
-# 2) Generate random DB passwords (only if not already present)
+# 2) Generate random passwords (only if not already present)
 if ! grep -q '^MYSQL_PASSWORD=' "$ENV_FILE"; then
   MYSQL_PASSWORD=$(openssl rand -base64 18)
   echo "MYSQL_PASSWORD=$MYSQL_PASSWORD" >> "$ENV_FILE"
@@ -78,6 +79,12 @@ if ! grep -q '^MYSQL_ROOT_PASSWORD=' "$ENV_FILE"; then
   MYSQL_ROOT_PASSWORD=$(openssl rand -base64 24)
   echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> "$ENV_FILE"
   LOG "Generated MYSQL_ROOT_PASSWORD"
+fi
+
+if ! grep -q '^PIHOLE_PASSWORD=' "$ENV_FILE"; then
+  PIHOLE_PASSWORD=$(openssl rand -base64 24)
+  echo "PIHOLE_PASSWORD=$PIHOLE_PASSWORD" >> "$ENV_FILE"
+  LOG "Generated PIHOLE_PASSWORD"
 fi
 
 # 3) Default ports (only add if not already present)

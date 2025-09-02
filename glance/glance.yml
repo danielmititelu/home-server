@@ -19,3 +19,6 @@ pages:
               - title: Next cloud
                 url: http://pi.local:8080
                 icon: si:nextcloud
+              - title: Pihole
+                url: http://pi.local:8081
+                icon: si:pihole
