@@ -11,4 +11,15 @@ Commands:
 cd /srv/compose
 docker compose pull
 docker compose up -d
+
+docker compose logs nextcloud
+```
+
+Good to know:
+
+What is the username/password for qbittorrent web ui?
+
+A temporary password is printed in the logs:
+```
+docker compose logs qbittorrent
 ```

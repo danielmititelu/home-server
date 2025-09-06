@@ -90,18 +90,6 @@ if ! grep -q '^PIHOLE_PASSWORD=' "$ENV_FILE"; then
   LOG "Generated PIHOLE_PASSWORD"
 fi
 
-if ! grep -q '^QBT_WEBUI_PASSWORD=' "$ENV_FILE"; then
-  QBT_WEBUI_PASSWORD=$(openssl rand -base64 24)
-  echo "QBT_WEBUI_PASSWORD=$QBT_WEBUI_PASSWORD" >> "$ENV_FILE"
-  LOG "Generated QBT_WEBUI_PASSWORD"
-fi
-
-if ! grep -q '^QBT_WEBUI_USERNAME=' "$ENV_FILE"; then
-  QBT_WEBUI_USERNAME="admin"
-  echo "QBT_WEBUI_USERNAME=$QBT_WEBUI_USERNAME" >> "$ENV_FILE"
-  LOG "Generated QBT_WEBUI_USERNAME"
-fi
-
 # 3) Default ports (only add if not already present)
 grep -q '^NEXTCLOUD_PORT=' "$ENV_FILE" || echo "NEXTCLOUD_PORT=8080" >> "$ENV_FILE"
 grep -q '^GLANCE_PORT=' "$ENV_FILE"    || echo "GLANCE_PORT=8090" >> "$ENV_FILE"
