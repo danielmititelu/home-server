@@ -1,0 +1,2 @@
+# Ignore the environment file for the backup script
+backup/backup-srv-to-windows.env
