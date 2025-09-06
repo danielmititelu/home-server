@@ -40,13 +40,16 @@ LOG "Creating /srv folder layout"
 mkdir -p \
   /srv/compose \
   /srv/homeassistant/config \
-  /srv/nextcloud/{html,config,data,custom_apps,themes,db,redis} \
+  /srv/nextcloud/{html,config,data,custom_apps,themes} \
+  /srv/db \
+  /srv/redis \
   /srv/esphome \
   /srv/pihole/etc-pihole \
   /srv/vaultwarden \
   /srv/qbittorrent/appdata \
   /srv/downloads \
-  /srv/glance
+  /srv/glance \
+
 
 chown -R "$TARGET_USER:$TARGET_USER" /srv
 

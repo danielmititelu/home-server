@@ -19,8 +19,9 @@ SRC_DIR="/srv"
 # --delete delete files in dest that are not in src
 # --partial keep partially transferred files
 # --numeric-ids use numeric user and group IDs
+# --info=progress2 show progress during transfer
 
-RSYNC_OPTIONS="-az --delete --partial --numeric-ids"
+RSYNC_OPTIONS="-az --delete --partial --numeric-ids --info=progress2"
 
 EXCLUDES=(--exclude="/downloads")
 

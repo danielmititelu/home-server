@@ -70,9 +70,12 @@ services:
       - MARIADB_USER=nextcloud
       - MARIADB_PASSWORD=${MYSQL_PASSWORD}
       - MARIADB_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    command:
+      - "mariadbd"
+      - "--transaction-isolation=READ-COMMITTED"
+      - "--binlog-format=ROW"
     volumes:
-      - /srv/nextcloud/db:/var/lib/mysql
+      - /srv/db:/var/lib/mysql
     networks: [appnet]
 
   nc-redis:
@@ -80,7 +83,7 @@ services:
     container_name: nc-redis
     restart: unless-stopped
     volumes:
-      - /srv/nextcloud/redis:/data
+      - /srv/redis:/data
     networks: [appnet]
 
   pihole:

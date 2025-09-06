@@ -13,6 +13,7 @@ docker compose pull
 docker compose up -d
 
 docker compose logs nextcloud
+docker exec -it nextcloud bash
 ```
 
 Good to know:
