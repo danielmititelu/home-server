@@ -132,6 +132,8 @@ services:
       - TZ=Etc/UTC
       - WEBUI_PORT=8084
       - TORRENTING_PORT=6881
+      - QBT_WEBUI_USERNAME=${QBT_USERNAME}
+      - QBT_WEBUI_PASSWORD=${QBT_PASSWORD}
     volumes:
       - /srv/qbittorrent/appdata:/config
       - /srv/downloads:/downloads
