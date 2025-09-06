@@ -121,6 +121,7 @@ services:
       - WEBSOCKET_ENABLED=true
     volumes:
       - /srv/vaultwarden/:/data/
+
   qbittorrent:
     container_name: qbittorrent
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -138,9 +139,6 @@ services:
       - 8084:8084
       - 6881:6881
       - 6881:6881/udp
-    
-    
-    
 
 networks:
   appnet:
