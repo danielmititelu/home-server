@@ -58,7 +58,7 @@ services:
       # Optionally, also mount docker socket if you want to use the docker containers widget
       # - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
-      - 80:8080
+      - 8086:8080
     env_file: .env
 
   nc-db:
@@ -143,6 +143,25 @@ services:
       - 6881:6881
       - 6881:6881/udp
 
+  caddy:
+    container_name: caddy
+    image: caddy:latest
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - /srv/caddy:/etc/caddy
+      - caddy_data:/data
+      - caddy_config:/config
+
 networks:
   appnet:
     driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -51,7 +51,7 @@ mkdir -p \
   /srv/qbittorrent/appdata \
   /srv/downloads \
   /srv/glance \
-
+  /srv/caddy
 
 chown -R "$TARGET_USER:$TARGET_USER" /srv
 
@@ -112,9 +112,11 @@ LOG ".env written at $ENV_FILE"
 
 RAW_COMPOSE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/compose/docker-compose.yaml"
 RAW_GLANCE="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/glance/glance.yml"
+RAW_CADDY="https://raw.githubusercontent.com/danielmititelu/home-server/refs/heads/main/caddy/Caddyfile"
 
 DEST_COMPOSE="/srv/compose/docker-compose.yaml"
 DEST_GLANCE="/srv/glance/config/glance.yml"
+DEST_CADDY="/srv/caddy/Caddyfile"
 
 download_overwrite() {
   local url="$1" dest="$2"
@@ -133,10 +135,13 @@ download_overwrite() {
 
 download_overwrite "$RAW_COMPOSE" "$DEST_COMPOSE"
 download_overwrite "$RAW_GLANCE"  "$DEST_GLANCE"
+download_overwrite "$RAW_CADDY"   "$DEST_CADDY"
 
 LOG "Configs updated:
   - $DEST_COMPOSE
-  - $DEST_GLANCE"
+  - $DEST_GLANCE
+  - $DEST_CADDY
+"
 
 # Helpful notice
 LOG "All set."

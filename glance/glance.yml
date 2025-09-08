@@ -14,14 +14,14 @@ pages:
             title: Services
             sites:
               - title: Home Assistant
-                url: http://pi.local:8123/
+                url: https://homeassistant.home
                 icon: si:homeassistant
               - title: Next cloud
-                url: http://pi.local:8080
+                url: https://nextcloud.home
                 icon: si:nextcloud
               - title: Pihole
-                url: http://pi.local:8081/admin/
+                url: https://pi-hole.home/admin
                 icon: si:pihole
-              - title: Pihole
-                url: http://pi.local:8084
+              - title: qbittorrent
+                url: https://qbittorrent.home
                 icon: si:qbittorrent

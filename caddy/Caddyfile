@@ -1,0 +1,23 @@
+{
+    local_certs
+}
+
+homeassistant.home {
+    reverse_proxy host.docker.internal:8123
+}
+
+pi-hole.home {
+    reverse_proxy pihole:80
+}
+
+dashboard.home {
+    reverse_proxy glance:8080
+}
+
+nextcloud.home {
+    reverse_proxy nextcloud:80
+}
+
+qbittorrent.home {
+    reverse_proxy qbittorrent:8084
+}
