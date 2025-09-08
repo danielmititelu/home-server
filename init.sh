@@ -18,6 +18,8 @@ LOG "Updating system packages"
 apt-get update -y
 DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y
 
+sudo apt install --no-install-recommends -y kodi libcec6 cec-utils
+
 # Optional but avoids serial device conflicts with Zigbee sticks
 if systemctl list-unit-files | grep -q ModemManager.service; then
   LOG "Disabling ModemManager (to avoid grabbing USB radios)"
@@ -52,6 +54,9 @@ mkdir -p \
 
 
 chown -R "$TARGET_USER:$TARGET_USER" /srv
+
+# this might be needed for nextcloud
+# chown -R 33:33 /srv/nextcloud
 
 # ----- Zigbee dongle detection + .env secrets -----
 

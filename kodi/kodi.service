@@ -1,0 +1,14 @@
+[Unit]
+Description=Kodi Media Center
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+User=pi
+Group=pi
+Environment=KODI_AE_SINK=ALSA
+ExecStart=/usr/bin/kodi-standalone
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
