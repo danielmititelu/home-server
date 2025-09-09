@@ -119,7 +119,7 @@ services:
     image: vaultwarden/server:latest
     restart: unless-stopped
     ports:
-      - :8083:80
+      - 8083:80
     environment:
       - WEBSOCKET_ENABLED=true
     volumes:
@@ -157,6 +157,9 @@ services:
       - /srv/caddy:/etc/caddy
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - default
+      - appnet
 
 networks:
   appnet:
