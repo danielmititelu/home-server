@@ -28,8 +28,6 @@ services:
     image: nextcloud:stable
     container_name: nextcloud
     restart: unless-stopped
-    ports:
-      - "8080:80"
     depends_on:
       - nc-db
       - nc-redis
@@ -57,8 +55,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       # Optionally, also mount docker socket if you want to use the docker containers widget
       # - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - 8086:8080
     env_file: .env
 
   nc-db:
@@ -93,8 +89,6 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "8081:80/tcp"
-      - "8082:443/tcp"
     environment:
       TZ: 'Europe/Bucharest'
       FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
