@@ -32,10 +32,10 @@ services:
       - nc-db
       - nc-redis
     environment:
-      - MYSQL_HOST=nc-db
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - POSTGRES_HOST=postgresql
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${POSTGRES_NC_PASSWORD}
       - REDIS_HOST=nc-redis
     volumes:
       - /srv/nextcloud/html:/var/www/html
@@ -152,6 +152,16 @@ services:
     networks:
       - default
       - appnet
+
+  postgresql:
+    container_name: postgresql
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - /srv/postgresql/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks: [appnet]
 
 networks:
   appnet:

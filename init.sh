@@ -44,6 +44,7 @@ mkdir -p \
   /srv/homeassistant/config \
   /srv/nextcloud/{html,config,data,custom_apps,themes} \
   /srv/db \
+  /srv/postgresql \
   /srv/redis \
   /srv/esphome \
   /srv/pihole/etc-pihole \
