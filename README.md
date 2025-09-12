@@ -27,9 +27,10 @@ docker compose logs qbittorrent
 
 ### How to enable Kodi?
 
-1. copy /kodi/kodi.service to /etc/systemd/system/kodi.service
+1. (optional instead of rsync) copy kodi.service to /etc/systemd/system/kodi.service
 2. run these commands
 ```
+sudo rsync -av /home-server/config/etc/ /etc/
 sudo systemctl enable kodi
 sudo systemctl start kodi
 reboot
@@ -47,4 +48,15 @@ docker exec -it postgresql psql -U postgres
 \l -> list databases
 \du -> list roles/users 
 \dt -> list tables
+
+create user immich with password 'immich_pw'
+create database immich owner immich;
+create extenstion if not exists vector;
+```
+
+### How to sync config files 
+
+```
+rsync -a /home-server/config/srv/ /srv/
+
 ```
