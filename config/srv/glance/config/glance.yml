@@ -32,3 +32,7 @@ pages:
                 url: https://vaultwarden.home
                 check-url: http://vaultwarden:80
                 icon: si:vaultwarden
+              - title: mealie
+                url: https://mealie.home
+                check-url: http://mealie:9000
+                icon: si:mealie

@@ -29,3 +29,7 @@ vaultwarden.home {
 homepage.home {
     reverse_proxy homepage:3000
 }
+
+mealie.home {
+    reverse_proxy mealie:9000
+}

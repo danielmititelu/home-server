@@ -1,0 +1,1 @@
+rsync -a /home-server/config/srv/ /srv/

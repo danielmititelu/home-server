@@ -9,6 +9,7 @@ include:
     - compose/qbittorrent.yaml
     # - compose/vaultwarden.yaml
     - compose/homepage.yaml
+    - compose/mealie.yaml
 
 networks:
   appnet:
