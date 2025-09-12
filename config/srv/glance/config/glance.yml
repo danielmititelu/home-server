@@ -15,6 +15,7 @@ pages:
             sites:
               - title: Home Assistant
                 url: https://homeassistant.home
+                check-url: http://host.docker.internal:8123
                 icon: si:homeassistant
               - title: Next cloud
                 url: https://nextcloud.home

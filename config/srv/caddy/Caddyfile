@@ -26,10 +26,6 @@ vaultwarden.home {
     reverse_proxy vaultwarden:80
 }
 
-homepage.home {
-    reverse_proxy homepage:3000
-}
-
 mealie.home {
     reverse_proxy mealie:9000
 }
