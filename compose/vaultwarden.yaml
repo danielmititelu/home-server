@@ -5,8 +5,7 @@ services:
     restart: unless-stopped
     environment:
       DOMAIN: "https://vaultwarden.home"
-      # - WEBSOCKET_ENABLED=true
-      # - SIGNUPS_ALLOWED=false
-      # - DOMAIN="https://vaultwarden.home"
+      SIGNUPS_ALLOWED: false
+      WEBSOCKET_ENABLED: true
     volumes:
       - /srv/vaultwarden/:/data/
