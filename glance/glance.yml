@@ -18,10 +18,17 @@ pages:
                 icon: si:homeassistant
               - title: Next cloud
                 url: https://nextcloud.home
+                check-url: http://nextcloud:80
                 icon: si:nextcloud
               - title: Pihole
                 url: https://pi-hole.home/admin
+                check-url: http://pihole:80/admin
                 icon: si:pihole
               - title: qbittorrent
                 url: https://qbittorrent.home
+                check-url: http://qbittorrent:8084
                 icon: si:qbittorrent
+              - title: vaultwarden
+                url: https://vaultwarden.home
+                check-url: http://vaultwarden:80
+                icon: si:vaultwarden

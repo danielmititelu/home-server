@@ -7,7 +7,8 @@ include:
     - compose/pihole.yaml
     - compose/postgresql.yaml
     - compose/qbittorrent.yaml
-    - compose/vaultwarden.yaml
+    # - compose/vaultwarden.yaml
+    - compose/homepage.yaml
 
 networks:
   appnet:

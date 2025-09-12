@@ -25,3 +25,7 @@ qbittorrent.home {
 vaultwarden.home {
     reverse_proxy vaultwarden:80
 }
+
+homepage.home {
+    reverse_proxy homepage:3000
+}

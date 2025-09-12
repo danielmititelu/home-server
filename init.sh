@@ -52,7 +52,8 @@ mkdir -p \
   /srv/qbittorrent/appdata \
   /srv/downloads \
   /srv/glance \
-  /srv/caddy
+  /srv/caddy/{config,data} \
+  /srv/homepage
 
 chown -R "$TARGET_USER:$TARGET_USER" /srv
 
