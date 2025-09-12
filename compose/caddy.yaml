@@ -1,0 +1,18 @@
+services:
+  caddy:
+    container_name: caddy
+    image: caddy:latest
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - /srv/caddy:/etc/caddy
+      - /srv/caddy/data:/data
+      - /srv/caddy/config:/config
+    networks:
+      - default
+      - appnet

@@ -32,3 +32,5 @@ sudo systemctl enable kodi
 sudo systemctl start kodi
 reboot
 ```
+
+docker exec -u www-data nextcloud php occ maintenance:mode --off

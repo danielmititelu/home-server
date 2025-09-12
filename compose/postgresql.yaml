@@ -1,0 +1,11 @@
+services:
+  postgresql:
+    container_name: postgresql
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - /srv/postgresql/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks: [appnet]
+    

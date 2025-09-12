@@ -1,0 +1,27 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    network_mode: host            # discovery, mDNS, SSDP, BLE, etc.
+    privileged: true              # udev/USB access; simplest path on Pi
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - /srv/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      # enable Bluetooth integrations (optional but handy)
+      - /run/dbus:/run/dbus:ro
+    devices:
+      # Use the ZIGBEE_DEVICE from .env (fails if missing)
+      - "${ZIGBEE_DEVICE:?Set ZIGBEE_DEVICE in .env}:/dev/ttyUSB-Zigbee"
+
+  # esphome:
+  #   image: ghcr.io/esphome/esphome
+  #   container_name: esphome
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   volumes:
+  #     - /srv/esphome:/config
+
+      

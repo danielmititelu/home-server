@@ -21,3 +21,7 @@ nextcloud.home {
 qbittorrent.home {
     reverse_proxy qbittorrent:8084
 }
+
+vaultwarden.home {
+    reverse_proxy vaultwarden:80
+}

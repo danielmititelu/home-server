@@ -1,0 +1,14 @@
+include:
+  - path:
+    - compose/caddy.yaml
+    - compose/glance.yaml
+    - compose/homeassistant.yaml
+    - compose/nextcloud.yaml
+    - compose/pihole.yaml
+    - compose/postgresql.yaml
+    - compose/qbittorrent.yaml
+    - compose/vaultwarden.yaml
+
+networks:
+  appnet:
+    driver: bridge

@@ -1,0 +1,11 @@
+services:
+  vaultwarden:
+    container_name: vaultwarden
+    image: vaultwarden/server:latest
+    restart: unless-stopped
+    environment:
+      WEBSOCKET_ENABLED: true
+      SIGNUPS_ALLOWED: false
+      DOMAIN: 'https://vaultwarden.home'
+    volumes:
+      - /srv/vaultwarden/:/data/
