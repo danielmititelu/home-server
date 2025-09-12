@@ -33,3 +33,7 @@ mealie.home {
 paperless.home {
     reverse_proxy paperless:8000
 }
+
+immich.home {
+    reverse_proxy immich:2283
+}

@@ -41,3 +41,7 @@ pages:
                 url: https://paperless.home
                 check-url: http://paperless:8000
                 icon: si:paperless
+              - title: immich
+                url: https://immich.home
+                check-url: http://immich:2283
+                icon: si:immich
