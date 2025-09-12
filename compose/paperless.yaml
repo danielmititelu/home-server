@@ -1,0 +1,29 @@
+services:
+  paperless:
+    container_name: paperless
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - postgresql
+      - paperless-redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - /srv/papeless/data:/usr/src/paperless/data
+      - /srv/paperless/media:/usr/src/paperless/media
+      - /srv/paperless/export:/usr/src/paperless/export
+      - /srv/paperless/consume:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      PAPERLESS_DBHOST: postgresql
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${POSTGRES_PAPERLESS_PASSWORD}
+      PAPERLESS_TIME_ZOME: Europe/Bucharest
+
+  paperless-redis:
+    container_name: paperless-redis
+    image: docker.io/library/redis:8
+    restart: unless-stopped
+    volumes:
+      - /srv/paperless/redis:/data

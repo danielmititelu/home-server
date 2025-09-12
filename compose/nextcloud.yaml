@@ -19,6 +19,7 @@ services:
       - /srv/nextcloud/data:/var/www/html/data
       - /srv/nextcloud/themes:/var/www/html/themes
     networks: [appnet]
+
   nc-redis:
     image: redis:7
     container_name: nc-redis

@@ -49,7 +49,7 @@ docker exec -it postgresql psql -U postgres
 \du -> list roles/users 
 \dt -> list tables
 
-create user immich with password 'immich_pw'
+create user immich with password 'immich_pw';
 create database immich owner immich;
 create extenstion if not exists vector;
 ```

@@ -29,3 +29,7 @@ vaultwarden.home {
 mealie.home {
     reverse_proxy mealie:9000
 }
+
+paperless.home {
+    reverse_proxy paperless:8000
+}
