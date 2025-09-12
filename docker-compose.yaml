@@ -10,7 +10,7 @@ include:
     - compose/vaultwarden.yaml
     - compose/mealie.yaml
     # - compose/paperless.yaml
-    # - compose/immich.yaml
+    - compose/immich.yaml
 
 networks:
   appnet:

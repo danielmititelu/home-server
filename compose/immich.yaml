@@ -16,13 +16,11 @@ services:
       - /srv/immich/:/data
       - /etc/localtime:/etc/localtime:ro
     environment:
-      DB_HOST: postgresql
-      DB_PORT: 5432
+      DB_HOSTNAME: postgresql
       DB_USERNAME: immich
       DB_PASSWORD: ${POSTGRES_IMMICH_PASSWORD}
       DB_DATABASE_NAME: immich
-      REDIS_HOST: immich-redis
-      REDIS_PORT: 6379
+      REDIS_HOSTNAME: immich-redis
     healthcheck:
       disable: false
     networks: [appnet]

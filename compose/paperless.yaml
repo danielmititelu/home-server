@@ -20,6 +20,7 @@ services:
       PAPERLESS_DBUSER: paperless
       PAPERLESS_DBPASS: ${POSTGRES_PAPERLESS_PASSWORD}
       PAPERLESS_TIME_ZOME: Europe/Bucharest
+    networks: [appnet]
 
   paperless-redis:
     container_name: paperless-redis
@@ -27,3 +28,4 @@ services:
     restart: unless-stopped
     volumes:
       - /srv/paperless/redis:/data
+    networks: [appnet]

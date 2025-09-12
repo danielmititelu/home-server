@@ -51,7 +51,7 @@ docker exec -it postgresql psql -U postgres
 
 create user immich with password 'immich_pw';
 create database immich owner immich;
-create extenstion if not exists vector;
+create extension if not exists vector;
 ```
 
 ### How to sync config files 
