@@ -9,7 +9,7 @@ include:
     - compose/qbittorrent.yaml
     - compose/vaultwarden.yaml
     - compose/mealie.yaml
-    # - compose/paperless.yaml
+    - compose/paperless.yaml
     - compose/immich.yaml
 
 networks:

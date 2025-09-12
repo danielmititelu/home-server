@@ -13,15 +13,15 @@ pages:
             cache: 1m
             title: Services
             sites:
-              - title: Home Assistant
+              - title: home Assistant
                 url: https://homeassistant.home
                 check-url: http://host.docker.internal:8123
                 icon: si:homeassistant
-              - title: Next cloud
+              - title: next cloud
                 url: https://nextcloud.home
-                check-url: http://nextcloud:80
+                check-url: http://nextcloud:80/status.php
                 icon: si:nextcloud
-              - title: Pihole
+              - title: pihole
                 url: https://pi-hole.home/admin
                 check-url: http://pihole:80/admin
                 icon: si:pihole
@@ -40,7 +40,7 @@ pages:
               - title: paperless
                 url: https://paperless.home
                 check-url: http://paperless:8000
-                icon: si:paperless
+                icon: si:paperlessngx
               - title: immich
                 url: https://immich.home
                 check-url: http://immich:2283

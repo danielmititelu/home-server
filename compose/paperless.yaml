@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /srv/papeless/data:/usr/src/paperless/data
+      - /srv/paperless/data:/usr/src/paperless/data
       - /srv/paperless/media:/usr/src/paperless/media
       - /srv/paperless/export:/usr/src/paperless/export
       - /srv/paperless/consume:/usr/src/paperless/consume
@@ -19,6 +19,8 @@ services:
       PAPERLESS_DBNAME: paperless
       PAPERLESS_DBUSER: paperless
       PAPERLESS_DBPASS: ${POSTGRES_PAPERLESS_PASSWORD}
+      PAPERLESS_URL: https://paperless.home
+      PAPERLESS_TRUSTED_PROXIES: ${PAPERLESS_TRUSTED_PROXIES}
       PAPERLESS_TIME_ZOME: Europe/Bucharest
     networks: [appnet]
 
