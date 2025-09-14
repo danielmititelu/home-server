@@ -37,3 +37,7 @@ paperless.home {
 immich.home {
     reverse_proxy immich:2283
 }
+
+collabora.home {
+    reverse_proxy collabora:9980
+}

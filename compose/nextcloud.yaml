@@ -27,3 +27,17 @@ services:
     volumes:
       - /srv/redis:/data
     networks: [appnet]
+
+  collabora:
+    image: collabora/code
+    container_name: collabora
+    restart: unless-stopped
+    volumes:
+      - /srv/collabora/coolwsd:/etc/coolwsd
+    environment:
+      - aliasgroup1=https://nextcloud.home
+      - "extra_params=--o:ssl.enable=false --o:ssl.termination=true"
+      - DONT_GEN_SSL_CERT=true
+      - username=admin
+      - password=test
+    networks: [appnet]
