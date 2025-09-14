@@ -13,7 +13,7 @@ pages:
             cache: 1m
             title: Services
             sites:
-              - title: home Assistant
+              - title: home assistant
                 url: https://homeassistant.home
                 check-url: http://host.docker.internal:8123
                 icon: si:homeassistant

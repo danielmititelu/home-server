@@ -6,8 +6,6 @@ services:
     depends_on:
       - postgresql
       - paperless-redis
-    ports:
-      - "8000:8000"
     volumes:
       - /srv/paperless/data:/usr/src/paperless/data
       - /srv/paperless/media:/usr/src/paperless/media

@@ -13,6 +13,5 @@ services:
       - /srv/qbittorrent/appdata:/config
       - /srv/downloads:/downloads
     ports:
-      - 8084:8084
       - 6881:6881
       - 6881:6881/udp

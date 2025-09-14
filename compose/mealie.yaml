@@ -15,4 +15,3 @@ services:
       PGID: 1000
       TZ: Europe/Bucharest
       BASE_URL: https://mealie.home
-
