@@ -8,9 +8,6 @@ pages:
     columns:
       - size: full
         widgets:
-          - type: search
-            autofocus: true
-
           - type: monitor
             cache: 1m
             title: Services
@@ -47,11 +44,15 @@ pages:
                 url: https://immich.home
                 check-url: http://immich:2283
                 icon: sh:immich
-              - title: dumbpad
-                url: https://dumbpad.home
-                check-url: http://dumbpad:3000
-                icon: sh:dumbpad
               - title: endurain
                 url: https://endurain.home
                 check-url: http://endurain:8080
                 icon: sh:endurain
+              - title: dumbpad
+                url: https://dumbpad.home
+                check-url: http://dumbpad:3000
+                icon: sh:dumbpad
+              - title: dumbassets
+                url: https://dumbassets.home
+                check-url: http://dumbassets:3000
+                icon: sh:dumbassets

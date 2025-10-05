@@ -8,4 +8,3 @@ services:
     environment:
       SITE_TITLE: DumbPad
       BASE_URL: https://dumbpad.home
-      ALLOWED_ORIGINS: https://dumbpad.home

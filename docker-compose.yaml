@@ -13,6 +13,7 @@ include:
     - compose/immich.yaml
     - compose/endurain.yaml
     - compose/dumbpad.yaml
+    - compose/dumbassets.yaml
 
 networks:
   appnet:

@@ -49,3 +49,7 @@ endurain.home {
 dumbpad.home {
     reverse_proxy dumbpad:3000
 }
+
+dumbassets.home {
+    reverse_proxy dumbassets:3000
+}
