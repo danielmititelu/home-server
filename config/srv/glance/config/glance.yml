@@ -1,3 +1,5 @@
+theme:
+  background-color: 220 15.8 7.5
 pages:
   - name: Startpage
     width: slim
