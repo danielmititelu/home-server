@@ -18,19 +18,19 @@ pages:
               - title: home assistant
                 url: https://homeassistant.home
                 check-url: http://host.docker.internal:8123
-                icon: si:homeassistant
+                icon: sh:home-assistant
               - title: next cloud
                 url: https://nextcloud.home
                 check-url: http://nextcloud:80/status.php
-                icon: si:nextcloud
+                icon: sh:nextcloud
               - title: pihole
                 url: https://pi-hole.home/admin
                 check-url: http://pihole:80/admin
-                icon: si:pihole
+                icon: sh:pi-hole
               - title: qbittorrent
                 url: https://qbittorrent.home
                 check-url: http://qbittorrent:8084
-                icon: si:qbittorrent
+                icon: sh:qbittorrent
               - title: vaultwarden
                 url: https://vaultwarden.home
                 check-url: http://vaultwarden:80
@@ -38,12 +38,20 @@ pages:
               - title: mealie
                 url: https://mealie.home
                 check-url: http://mealie:9000
-                icon: si:mealie
+                icon: sh:mealie
               - title: paperless
                 url: https://paperless.home
                 check-url: http://paperless:8000
-                icon: si:paperlessngx
+                icon: sh:paperless-ngx
               - title: immich
                 url: https://immich.home
                 check-url: http://immich:2283
-                icon: si:immich
+                icon: sh:immich
+              - title: dumbpad
+                url: https://dumbpad.home
+                check-url: http://dumbpad:3000
+                icon: sh:dumbpad
+              - title: endurain
+                url: https://endurain.home
+                check-url: http://endurain:8080
+                icon: sh:endurain

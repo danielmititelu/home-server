@@ -49,6 +49,7 @@ docker exec -it postgresql psql -U postgres
 \du -> list roles/users 
 \dt -> list tables
 \c DBNAME -> change current db
+\q -> quit
 
 create user immich with password 'immich_pw';
 create database immich owner immich;

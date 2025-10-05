@@ -41,3 +41,11 @@ immich.home {
 collabora.home {
     reverse_proxy collabora:9980
 }
+
+endurain.home {
+    reverse_proxy endurain:8080
+}
+
+dumbpad.home {
+    reverse_proxy dumbpad:3000
+}

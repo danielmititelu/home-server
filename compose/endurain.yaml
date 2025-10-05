@@ -1,0 +1,23 @@
+services:
+  endurain:
+    image: ghcr.io/joaovitoriasilva/endurain:latest
+    container_name: endurain-app
+    restart: unless-stopped
+    depends_on:
+      - postgresql
+    volumes:
+      - /srv/endurain/data:/app/backend/data
+      - /srv/endurain/logs:/app/backend/logs
+    ports:
+      - "8080:8080"
+    environment:
+      - TZ=Etc/UTC
+      - DB_PASSWORD=${POSTGRES_ENDURAIN_PASSWORD}
+      - POSTGRES_DB=endurain
+      - POSTGRES_USER=endurain
+      - SECRET_KEY=${ENDURAIN_PASSWORD}
+      - FERNET_KEY=${ENDURAIN_FERNET_KEY}
+      - POSTGRES_PASSWORD=${POSTGRES_ENDURAIN_PASSWORD}
+      - ENDURAIN_HOST=https://endurain.home
+      - BEHIND_PROXY=true
+    networks: [appnet]
