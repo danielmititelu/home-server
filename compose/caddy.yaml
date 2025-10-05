@@ -1,7 +1,7 @@
 services:
   caddy:
-    container_name: caddy
     image: caddy:latest
+    container_name: caddy
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"

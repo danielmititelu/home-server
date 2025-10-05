@@ -1,7 +1,7 @@
 services:
   postgresql:
-    container_name: postgresql
     image: pgvector/pgvector:pg17
+    container_name: postgresql
     restart: unless-stopped
     volumes:
       - /srv/postgresql/data:/var/lib/postgresql/data

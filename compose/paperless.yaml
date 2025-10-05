@@ -1,7 +1,7 @@
 services:
   paperless:
-    container_name: paperless
     image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
     restart: unless-stopped
     depends_on:
       - postgresql
@@ -23,8 +23,8 @@ services:
     networks: [appnet]
 
   paperless-redis:
-    container_name: paperless-redis
     image: docker.io/library/redis:8
+    container_name: paperless-redis
     restart: unless-stopped
     volumes:
       - /srv/paperless/redis:/data
