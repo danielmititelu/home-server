@@ -12,10 +12,9 @@ services:
       - "8080:8080"
     environment:
       - TZ=Etc/UTC
+      - DB_TYPE=postgres
+      - DB_HOST=postgresql
       - DB_PASSWORD=${POSTGRES_ENDURAIN_PASSWORD}
-      - POSTGRES_PASSWORD=${POSTGRES_ENDURAIN_PASSWORD}
-      - POSTGRES_DB=endurain
-      - POSTGRES_USER=endurain
       - SECRET_KEY=${ENDURAIN_PASSWORD}
       - FERNET_KEY=${ENDURAIN_FERNET_KEY}
       - ENDURAIN_HOST=https://endurain.home
