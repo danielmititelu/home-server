@@ -53,3 +53,8 @@ dumbpad.home {
 dumbassets.home {
     reverse_proxy dumbassets:3000
 }
+
+actualbudget.home {
+    encode gzip zstd
+    reverse_proxy actual:5006
+}

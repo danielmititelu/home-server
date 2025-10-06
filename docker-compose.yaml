@@ -14,6 +14,7 @@ include:
     - compose/endurain.yaml
     - compose/dumbpad.yaml
     - compose/dumbassets.yaml
+    - compose/actualbudget.yaml
 
 networks:
   appnet:
