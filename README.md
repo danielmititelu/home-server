@@ -62,3 +62,10 @@ create extension if not exists vector;
 rsync -a /home-server/config/srv/ /srv/
 
 ```
+
+### How to enable audio for steamlink
+```
+sudo apt install pulseaudio -y
+pulseaudio --start
+todo: try with pipewire
+```
