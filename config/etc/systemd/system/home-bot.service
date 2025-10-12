@@ -1,0 +1,15 @@
+[Unit]
+Description=HomeBot Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home-server/discord-bot
+ExecStart=/home/pi/.local/bin/uv run main.py
+Restart=always
+RestartSec=5
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target

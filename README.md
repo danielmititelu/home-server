@@ -69,3 +69,14 @@ sudo apt install pulseaudio -y
 pulseaudio --start
 todo: try with pipewire
 ```
+
+### Commands for a service running with systemd
+```
+sudo systemctl daemon-reload
+sudo systemctl start home-bot.service
+sudo systemctl stop home-bot.service
+sudo systemctl enable homebot.service # Enable on boot
+sudo systemctl disable homebot.service # Disable on boot
+sudo systemctl restart home-bot.service
+journalctl -u home-bot.service -f # view logs
+```
