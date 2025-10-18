@@ -80,3 +80,8 @@ sudo systemctl disable homebot.service # Disable on boot
 sudo systemctl restart home-bot.service
 journalctl -u home-bot.service -f # view logs
 ```
+
+### How to rebuild a local docker
+```
+docker compose build --no-cache actual-inserter
+```

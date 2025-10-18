@@ -3,3 +3,4 @@ backup/backup-srv-to-windows.env
 .env
 venv
 .venv
+node_modules

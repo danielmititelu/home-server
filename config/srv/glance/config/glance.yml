@@ -56,7 +56,7 @@ pages:
                 url: https://dumbassets.home
                 check-url: http://dumbassets:3000
                 icon: sh:dumbassets
-              - title: actualbudget
+              - title: actual budget
                 url: https://actualbudget.home
                 check-url: http://actual:5006
                 icon: sh:actual-budget
