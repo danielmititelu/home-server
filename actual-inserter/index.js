@@ -63,7 +63,7 @@ async function importCSVTransactions(file, categoryMap) {
         }
         transactions.push({
           date: row.date,
-          amount: parseInt(row.amount, 10) * -100,
+          amount: Math.round(parseFloat(row.amount) * -100),
           category: categoryId,
           notes: row.notes || '',
         });

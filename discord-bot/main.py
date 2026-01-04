@@ -1,12 +1,10 @@
 import csv
-from unicodedata import category
 import discord
 import os
 import psutil
 from dotenv import load_dotenv
 from discord import app_commands
 from datetime import datetime as dt
-from discord.ui import View, Select
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
