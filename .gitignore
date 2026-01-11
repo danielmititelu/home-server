@@ -4,3 +4,5 @@ backup/backup-srv-to-windows.env
 venv
 .venv
 node_modules
+obj
+bin
