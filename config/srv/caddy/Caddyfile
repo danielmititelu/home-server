@@ -58,3 +58,7 @@ actualbudget.home {
     encode gzip zstd
     reverse_proxy actual:5006
 }
+
+syncthing.home {
+    reverse_proxy 12:8384
+}

@@ -60,3 +60,7 @@ pages:
                 url: https://actualbudget.home
                 check-url: http://actual:5006
                 icon: sh:actual-budget
+              - title: syncthing
+                url: https://syncthing.home
+                check-url: http://host.docker.internal:8123
+                icon: sh:syncthing
