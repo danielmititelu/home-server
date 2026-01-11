@@ -19,28 +19,23 @@ var expenses = File.ReadAllLines(expensesFilePath)
     })
     .ToList();
 
-var grouped = expenses
-    .GroupBy(e => new { e.Month, e.Category })
-    .OrderBy(g => g.Key.Month)
-    .ThenBy(g => g.Key.Category);
-
-var reportLines = new List<string>(expenses.Count);
-
-int? currentMonth = null;
-
-foreach (var group in grouped)
-{
-    if (currentMonth != group.Key.Month)
+var reportLines = expenses
+    .GroupBy(e => e.Month)
+    .OrderBy(g => g.Key)
+    .SelectMany(monthGroup =>
     {
-        currentMonth = group.Key.Month;
-        var monthName = CultureInfo.CurrentCulture
-            .DateTimeFormat
-            .GetMonthName(currentMonth.Value);
-        reportLines.Add($"## {currentMonth:00} - {monthName}");
-    }
-
-    reportLines.Add($"- {group.Key.Category}: {group.Sum(e => e.Amount):0.00} ron");
-}
+        var month = monthGroup.Key;
+        var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month);
+        var categoryLines = monthGroup
+            .GroupBy(e => e.Category)
+            .OrderBy(g => g.Key)
+            .Select(catGroup => $"- {catGroup.Key}: {catGroup.Sum(e => e.Amount):0.00} ron");
+        var totalLine = $"- total: {monthGroup.Sum(e => e.Amount):0.00} ron";
+        return new[] { $"## {month:00} - {monthName}" }
+            .Concat(categoryLines)
+            .Concat(new[] { totalLine });
+    })
+    .ToList();
 
 File.WriteAllLines(reportFilePath, reportLines);
 
