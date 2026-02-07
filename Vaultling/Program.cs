@@ -7,16 +7,16 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 var services = new ServiceCollection();
-services.Configure<DailyFileOptions>(configuration.GetSection("DailyFile"));
+services.Configure<DailyEntryOptions>(configuration.GetSection("DailyEntry"));
 services.Configure<WorkoutOptions>(configuration.GetSection("Workout"));
 services.Configure<ExpenseOptions>(configuration.GetSection("Expense"));
 services.Configure<ErrorOptions>(configuration.GetSection("Error"));
 services.AddSingleton(TimeProvider.System);
-services.AddSingleton<DailyFileRepository>();
+services.AddSingleton<DailyEntryRepository>();
 services.AddSingleton<WorkoutRepository>();
 services.AddSingleton<ExpenseRepository>();
 services.AddSingleton<ErrorRepository>();
-services.AddTransient<DailyFileService>();
+services.AddTransient<DailyEntryService>();
 services.AddTransient<ExpenseService>();
 services.AddTransient<VaultlingRunner>();
 

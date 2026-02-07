@@ -1,7 +1,7 @@
 namespace Vaultling.Services;
 
 public class VaultlingRunner(
-    DailyFileService dailyFileService,
+    DailyEntryService dailyEntryService,
     ExpenseService expenseService,
     ErrorRepository errorRepository)
 {
@@ -9,7 +9,7 @@ public class VaultlingRunner(
     {
         try
         {
-            dailyFileService.ProcessDailyFile();
+            dailyEntryService.ProcessDailyEntry();
             expenseService.ProduceExpenseReport();
         }
         catch (Exception ex)

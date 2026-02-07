@@ -1,13 +1,13 @@
 namespace Vaultling.Services.Repositories;
 
-public class DailyFileRepository(IOptions<DailyFileOptions> options)
+public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
 {
-    private readonly DailyFileOptions _options = options.Value;
+    private readonly DailyEntryOptions _options = options.Value;
 
-    public DailyFile ReadDailyFile()
+    public DailyEntry ReadDailyEntry()
     {
         var lines = File.ReadLines(_options.TodayFile);
-        return DailyFile.Parse(lines);
+        return DailyEntry.Parse(lines);
     }
 
     public void ArchiveDailyFile(DateTimeOffset date)
@@ -23,8 +23,8 @@ public class DailyFileRepository(IOptions<DailyFileOptions> options)
         File.Move(todayFilePath, archiveFilePath);
     }
 
-    public void WriteDailyFile(DailyFile dailyFile)
+    public void WriteDailyEntry(DailyEntry dailyEntry)
     {
-        File.WriteAllLines(_options.TodayFile, dailyFile.ToMarkdownLines());
+        File.WriteAllLines(_options.TodayFile, dailyEntry.ToMarkdownLines());
     }
 }

@@ -1,6 +1,6 @@
 namespace Vaultling.Configuration;
 
-public class DailyFileOptions
+public class DailyEntryOptions
 {
     public string TodayFile { get; set; } = "";
     public string HistoryDirectory { get; set; } = "";

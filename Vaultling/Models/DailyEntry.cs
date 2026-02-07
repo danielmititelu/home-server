@@ -9,7 +9,7 @@ public enum DailySectionName
     Expenses
 }
 
-public record DailyFile(DateTimeOffset Date, IEnumerable<DailyWorkout> Workouts, IEnumerable<DailyExpense> Expenses)
+public record DailyEntry(DateTimeOffset Date, IEnumerable<DailyWorkout> Workouts, IEnumerable<DailyExpense> Expenses)
 {
     public IEnumerable<WorkoutLog> ToWorkoutLogs()
     {
@@ -55,7 +55,7 @@ public record DailyFile(DateTimeOffset Date, IEnumerable<DailyWorkout> Workouts,
         return markdown.Split('\n');
     }
 
-    public static DailyFile Parse(IEnumerable<string> lines)
+    public static DailyEntry Parse(IEnumerable<string> lines)
     {
         var sectionsContent = new Dictionary<string, List<string>>();
         string? currentSection = null;
@@ -77,7 +77,7 @@ public record DailyFile(DateTimeOffset Date, IEnumerable<DailyWorkout> Workouts,
         var workouts = ParseDailyWorkouts(sectionsContent[DailySectionName.Workout.ToString()]);
         var expenses = ParseDailyExpenses(sectionsContent[DailySectionName.Expenses.ToString()]);
 
-        return new DailyFile(date, workouts, expenses);
+        return new DailyEntry(date, workouts, expenses);
     }
 
     private static IEnumerable<DailyWorkout> ParseDailyWorkouts(List<string> csvLines)
