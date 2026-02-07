@@ -11,7 +11,7 @@ public class DailyFileManager(
 {
     public void Run()
     {
-        var todayDate = timeProvider.GetUtcNow().ToIsoDateString();
+        var todayDate = timeProvider.GetLocalNow().ToIsoDateString();
         var yesterdayFile = dailyFileRepository.ReadDailyFile();
 
         if (yesterdayFile.Date.ToIsoDateString() == todayDate)
@@ -26,7 +26,7 @@ public class DailyFileManager(
 
         var todayWorkouts = workoutRepository.GetTodayWorkout();
         var newTodayFile = new DailyFile(
-            Date: timeProvider.GetUtcNow().DateTime,
+            Date: timeProvider.GetLocalNow().DateTime,
             Workouts: todayWorkouts,
             Expenses: []
         );

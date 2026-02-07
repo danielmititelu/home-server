@@ -10,11 +10,11 @@ public class ErrorRepository(IOptions<ErrorOptions> options, TimeProvider timePr
 
     public void WriteErrorLog(Exception exception)
     {
-        var errorFileName = $"{timeProvider.GetUtcNow().ToIsoDateString()}-error.md";
+        var errorFileName = $"{timeProvider.GetLocalNow().ToIsoDateString()}-error.md";
         var errorFilePath = Path.Combine(_options.LogDirectory, errorFileName);
 
         var errorContent = $"""
-            # Error Log - {timeProvider.GetUtcNow():yyyy-MM-dd HH:mm:ss} UTC
+            # Error Log - {timeProvider.GetLocalNow():yyyy-MM-dd HH:mm:ss}
 
             ## Exception Type
             {exception.GetType().FullName}

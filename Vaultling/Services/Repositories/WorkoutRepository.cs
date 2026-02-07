@@ -10,7 +10,7 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
 
     public List<DailyWorkout> GetTodayWorkout()
     {
-        var todayDayOfWeek = timeProvider.GetUtcNow().ToString("dddd");
+        var todayDayOfWeek = timeProvider.GetLocalNow().ToString("dddd");
         var todayLine = File.ReadLines(_options.ScheduleFile)
             .Skip(1)
             .Where(line => !string.IsNullOrWhiteSpace(line))
