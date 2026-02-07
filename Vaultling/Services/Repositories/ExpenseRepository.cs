@@ -10,12 +10,13 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
 
     public IEnumerable<ExpenseLog> ReadExpenses()
     {
-        return File.ReadLines(_options.DataFile).ParseExpenseLogs();
+        var lines = File.ReadLines(_options.DataFile);
+        return ExpenseLog.Parse(lines);
     }
 
     public void AppendExpenses(IEnumerable<ExpenseLog> expenses)
     {
-        var lines = expenses.Select(e => $"{e.Month},{e.Day},{e.Category},{e.Amount},{e.Description}").ToList();
+        var lines = expenses.Select(e => e.ToCsvLine()).ToList();
         if (lines.Count == 0)
         {
             return;

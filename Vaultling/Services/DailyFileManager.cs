@@ -11,10 +11,10 @@ public class DailyFileManager(
 {
     public void Run()
     {
-        var todayDate = timeProvider.GetUtcNow().ToString("yyyy-MM-dd");
+        var todayDate = timeProvider.GetUtcNow().ToIsoDateString();
         var yesterdayFile = dailyFileRepository.ReadDailyFile();
 
-        if (yesterdayFile.Date.ToString("yyyy-MM-dd") == todayDate)
+        if (yesterdayFile.Date.ToIsoDateString() == todayDate)
         {
             return;
         }

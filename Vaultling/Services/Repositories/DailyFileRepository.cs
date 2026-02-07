@@ -11,35 +11,14 @@ public class DailyFileRepository(IOptions<DailyFileOptions> options)
     public DailyFile ReadDailyFile()
     {
         var lines = File.ReadLines(_options.TodayFile);
-        var sectionsContent = new Dictionary<string, List<string>>();
-        string? currentSection = null;
-
-        foreach (var line in lines)
-        {
-            if (line.StartsWith("# "))
-            {
-                currentSection = line[2..].Trim();
-                sectionsContent[currentSection] = [];
-            }
-            else if (!string.IsNullOrWhiteSpace(line) && currentSection != null)
-            {
-                sectionsContent[currentSection].Add(line.Trim());
-            }
-        }
-
-        var dateSection = DateTime.Parse(sectionsContent[DailySectionName.Date.ToString()].First());
-
-        var workouts = sectionsContent[DailySectionName.Workout.ToString()].ParseDailyWorkouts();
-        var expenses = sectionsContent[DailySectionName.Expenses.ToString()].ParseDailyExpenses();
-
-        return new DailyFile(dateSection, workouts, expenses);
+        return DailyFile.Parse(lines);
     }
 
     public void ArchiveDailyFile(DateTime date)
     {
         var todayFilePath = _options.TodayFile;
         var archiveDir = _options.HistoryDirectory;
-        var archiveFilePath = Path.Combine(archiveDir, $"daily-{date:yyyy-MM-dd}.md");
+        var archiveFilePath = Path.Combine(archiveDir, $"daily-{date.ToIsoDateString()}.md");
         if (!Directory.Exists(archiveDir))
         {
             Directory.CreateDirectory(archiveDir);

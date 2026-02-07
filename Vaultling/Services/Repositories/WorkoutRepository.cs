@@ -31,7 +31,7 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
 
     public void AppendWorkout(IEnumerable<WorkoutLog> logs)
     {
-        var lines = logs.Select(l => $"{l.Month},{l.Day},{l.Type},{l.Reps}").ToList();
+        var lines = logs.Select(l => l.ToCsvLine()).ToList();
         if (lines.Count == 0)
         {
             return;
