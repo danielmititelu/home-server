@@ -12,8 +12,8 @@ cd /srv/compose
 docker compose pull
 docker compose up -d
 
-docker compose logs nextcloud
-docker exec -it nextcloud bash
+docker compose logs homeassistant
+docker exec -it homeassistant bash
 ```
 
 Good to know:
@@ -35,10 +35,6 @@ sudo systemctl enable kodi
 sudo systemctl start kodi
 reboot
 ```
-### How to enable maintenance mode in nextcloud?
-
-docker exec -u www-data nextcloud php occ maintenance:mode --on
-
 ### How to run sql on postgresql?
 
 ```
@@ -79,9 +75,4 @@ sudo systemctl enable homebot.service # Enable on boot
 sudo systemctl disable homebot.service # Disable on boot
 sudo systemctl restart home-bot.service
 journalctl -u home-bot.service -f # view logs
-```
-
-### How to rebuild a local docker
-```
-docker compose build --no-cache actual-inserter
 ```

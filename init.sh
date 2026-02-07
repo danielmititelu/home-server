@@ -42,7 +42,6 @@ LOG "Creating /srv folder layout"
 mkdir -p \
   /srv/compose \
   /srv/homeassistant/config \
-  /srv/nextcloud/{html,config,data,custom_apps,themes} \
   /srv/db \
   /srv/postgresql \
   /srv/redis \
@@ -56,9 +55,6 @@ mkdir -p \
   /srv/homepage
 
 chown -R "$TARGET_USER:$TARGET_USER" /srv
-
-# this might be needed for nextcloud
-# chown -R 33:33 /srv/nextcloud
 
 # ----- Zigbee dongle detection + .env secrets -----
 
@@ -101,7 +97,6 @@ if ! grep -q '^PIHOLE_PASSWORD=' "$ENV_FILE"; then
 fi
 
 # 3) Default ports (only add if not already present)
-grep -q '^NEXTCLOUD_PORT=' "$ENV_FILE" || echo "NEXTCLOUD_PORT=8080" >> "$ENV_FILE"
 grep -q '^GLANCE_PORT=' "$ENV_FILE"    || echo "GLANCE_PORT=8090" >> "$ENV_FILE"
 
 chown "$TARGET_USER:$TARGET_USER" "$ENV_FILE"

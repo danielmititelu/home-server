@@ -3,18 +3,11 @@ include:
     - compose/caddy.yaml
     - compose/glance.yaml
     - compose/homeassistant.yaml
-    - compose/nextcloud.yaml
     - compose/pihole.yaml
     - compose/postgresql.yaml
     - compose/qbittorrent.yaml
     - compose/vaultwarden.yaml
-    - compose/mealie.yaml
-    - compose/paperless.yaml
     - compose/immich.yaml
-    - compose/endurain.yaml
-    - compose/dumbpad.yaml
-    - compose/dumbassets.yaml
-    - compose/actualbudget.yaml
 
 networks:
   appnet:

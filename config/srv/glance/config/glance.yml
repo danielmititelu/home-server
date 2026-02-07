@@ -16,10 +16,6 @@ pages:
                 url: https://homeassistant.home
                 check-url: http://host.docker.internal:8123
                 icon: sh:home-assistant
-              - title: next cloud
-                url: https://nextcloud.home
-                check-url: http://nextcloud:80/status.php
-                icon: sh:nextcloud
               - title: pihole
                 url: https://pi-hole.home/admin
                 check-url: http://pihole:80/admin
@@ -32,34 +28,10 @@ pages:
                 url: https://vaultwarden.home
                 check-url: http://vaultwarden:80
                 icon: si:vaultwarden
-              - title: mealie
-                url: https://mealie.home
-                check-url: http://mealie:9000
-                icon: sh:mealie
-              - title: paperless
-                url: https://paperless.home
-                check-url: http://paperless:8000
-                icon: sh:paperless-ngx
               - title: immich
                 url: https://immich.home
                 check-url: http://immich:2283
                 icon: sh:immich
-              - title: endurain
-                url: https://endurain.home
-                check-url: http://endurain:8080
-                icon: sh:endurain
-              - title: dumbpad
-                url: https://dumbpad.home
-                check-url: http://dumbpad:3000
-                icon: sh:dumbpad
-              - title: dumbassets
-                url: https://dumbassets.home
-                check-url: http://dumbassets:3000
-                icon: sh:dumbassets
-              - title: actual budget
-                url: https://actualbudget.home
-                check-url: http://actual:5006
-                icon: sh:actual-budget
               - title: syncthing
                 url: https://syncthing.home
                 check-url: http://host.docker.internal:8123
