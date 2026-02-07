@@ -17,6 +17,7 @@ services.AddSingleton<WorkoutRepository>();
 services.AddSingleton<ExpenseRepository>();
 services.AddSingleton<ErrorRepository>();
 services.AddTransient<DailyEntryService>();
+services.AddTransient<WorkoutService>();
 services.AddTransient<ExpenseService>();
 services.AddTransient<VaultlingRunner>();
 

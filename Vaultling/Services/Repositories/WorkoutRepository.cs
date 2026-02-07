@@ -34,4 +34,20 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
         }
         File.AppendAllLines(_options.LogFile, lines);
     }
+
+    public IEnumerable<WorkoutLog> ReadWorkoutLogs()
+    {
+        if (!File.Exists(_options.LogFile))
+        {
+            return [];
+        }
+
+        var lines = File.ReadLines(_options.LogFile);
+        return WorkoutLog.Parse(lines);
+    }
+
+    public void WriteWorkoutReport(WorkoutReport report)
+    {
+        File.WriteAllLines(_options.ReportFile, report.ToMarkdownLines());
+    }
 }
