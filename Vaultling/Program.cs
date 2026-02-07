@@ -16,8 +16,8 @@ services.AddSingleton<DailyFileRepository>();
 services.AddSingleton<WorkoutRepository>();
 services.AddSingleton<ExpenseRepository>();
 services.AddSingleton<ErrorRepository>();
-services.AddTransient<DailyFileManager>();
-services.AddTransient<ExpenseReportService>();
+services.AddTransient<DailyFileService>();
+services.AddTransient<ExpenseService>();
 services.AddTransient<VaultlingRunner>();
 
 var provider = services.BuildServiceProvider();

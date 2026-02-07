@@ -1,16 +1,16 @@
 namespace Vaultling.Services;
 
 public class VaultlingRunner(
-    DailyFileManager dailyFileManager,
-    ExpenseReportService expenseReportService,
+    DailyFileService dailyFileService,
+    ExpenseService expenseService,
     ErrorRepository errorRepository)
 {
     public void Run()
     {
         try
         {
-            dailyFileManager.Run();
-            expenseReportService.Generate();
+            dailyFileService.ProcessDailyFile();
+            expenseService.ProduceExpenseReport();
         }
         catch (Exception ex)
         {

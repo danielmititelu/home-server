@@ -1,12 +1,12 @@
 namespace Vaultling.Services;
 
-public class DailyFileManager(
+public class DailyFileService(
     DailyFileRepository dailyFileRepository,
     WorkoutRepository workoutRepository,
     ExpenseRepository expenseRepository,
     TimeProvider timeProvider)
 {
-    public void Run()
+    public void ProcessDailyFile()
     {
         var todayDate = timeProvider.GetLocalNow().ToIsoDateString();
         var yesterdayFile = dailyFileRepository.ReadDailyFile();
@@ -23,7 +23,7 @@ public class DailyFileManager(
 
         var todayWorkouts = workoutRepository.GetTodayWorkout();
         var newTodayFile = new DailyFile(
-            Date: timeProvider.GetLocalNow().DateTime,
+            Date: timeProvider.GetLocalNow(),
             Workouts: todayWorkouts,
             Expenses: []
         );

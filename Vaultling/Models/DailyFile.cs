@@ -9,7 +9,7 @@ public enum DailySectionName
     Expenses
 }
 
-public record DailyFile(DateTime Date, IEnumerable<DailyWorkout> Workouts, IEnumerable<DailyExpense> Expenses)
+public record DailyFile(DateTimeOffset Date, IEnumerable<DailyWorkout> Workouts, IEnumerable<DailyExpense> Expenses)
 {
     public IEnumerable<WorkoutLog> ToWorkoutLogs()
     {
@@ -73,7 +73,7 @@ public record DailyFile(DateTime Date, IEnumerable<DailyWorkout> Workouts, IEnum
             }
         }
 
-        var date = DateTime.Parse(sectionsContent[DailySectionName.Date.ToString()].First());
+        var date = DateTimeOffset.Parse(sectionsContent[DailySectionName.Date.ToString()].First());
         var workouts = ParseDailyWorkouts(sectionsContent[DailySectionName.Workout.ToString()]);
         var expenses = ParseDailyExpenses(sectionsContent[DailySectionName.Expenses.ToString()]);
 

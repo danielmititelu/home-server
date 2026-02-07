@@ -10,7 +10,7 @@ public class DailyFileRepository(IOptions<DailyFileOptions> options)
         return DailyFile.Parse(lines);
     }
 
-    public void ArchiveDailyFile(DateTime date)
+    public void ArchiveDailyFile(DateTimeOffset date)
     {
         var todayFilePath = _options.TodayFile;
         var archiveDir = _options.HistoryDirectory;

@@ -1,8 +1,8 @@
 namespace Vaultling.Services;
 
-public class ExpenseReportService(ExpenseRepository expenseRepository)
+public class ExpenseService(ExpenseRepository expenseRepository)
 {
-    public void Generate()
+    public void ProduceExpenseReport()
     {
         var expenses = expenseRepository.ReadExpenses();
 
