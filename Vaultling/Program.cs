@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Vaultling.Models;
+using Vaultling;
+using Vaultling.Configuration;
 using Vaultling.Services;
+using Vaultling.Services.Repositories;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -9,17 +11,17 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 var services = new ServiceCollection();
-services.Configure<FilePaths>(configuration.GetSection("FilePaths"));
+services.Configure<DailyFileOptions>(configuration.GetSection("DailyFile"));
+services.Configure<WorkoutOptions>(configuration.GetSection("Workout"));
+services.Configure<ExpenseOptions>(configuration.GetSection("Expense"));
 services.AddSingleton(TimeProvider.System);
-services.AddSingleton<VaultRepository>();
-services.AddTransient<WorkoutService>();
+services.AddSingleton<DailyFileRepository>();
+services.AddSingleton<WorkoutRepository>();
+services.AddSingleton<ExpenseRepository>();
 services.AddTransient<DailyFileManager>();
 services.AddTransient<ExpenseReportService>();
+services.AddTransient<VaultlingRunner>();
 
 var provider = services.BuildServiceProvider();
 
-// Run daily file management
-provider.GetRequiredService<DailyFileManager>().Run();
-
-// Generate reports
-provider.GetRequiredService<ExpenseReportService>().Generate();
+provider.GetRequiredService<VaultlingRunner>().Run();

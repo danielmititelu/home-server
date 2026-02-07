@@ -1,37 +1,35 @@
 using Vaultling.Models;
+using Vaultling.Services.Repositories;
 
 namespace Vaultling.Services;
 
 public class DailyFileManager(
-    VaultRepository vaultRepository,
-    WorkoutService workoutHandler,
+    DailyFileRepository dailyFileRepository,
+    WorkoutRepository workoutRepository,
+    ExpenseRepository expenseRepository,
     TimeProvider timeProvider)
 {
     public void Run()
     {
         var todayDate = timeProvider.GetUtcNow().ToString("yyyy-MM-dd");
-        var yesterdayFile = vaultRepository.ReadDailyFile();
-        Console.WriteLine($"Today's file date: {yesterdayFile.Date.Date:yyyy-MM-dd}, Today's date: {todayDate}");
-        if (yesterdayFile.Date.Date.ToString("yyyy-MM-dd") == todayDate)
+        var yesterdayFile = dailyFileRepository.ReadDailyFile();
+
+        if (yesterdayFile.Date.ToString("yyyy-MM-dd") == todayDate)
         {
             return;
         }
 
-        workoutHandler.ProcessYesterdayWorkout(yesterdayFile);
-        vaultRepository.ArchiveDailyFile();
-        vaultRepository.WriteTodayFile(GetTodayFileContent());
-    }
+        workoutRepository.AppendWorkout(yesterdayFile.ToWorkoutLogs());
+        expenseRepository.AppendExpenses(yesterdayFile.ToExpenseLogs());
 
-    private List<string> GetTodayFileContent()
-    {
-        var todayWorkoutSection = workoutHandler.GetTodayWorkoutSection();
-        var todayContent = new List<string>
-        {
-            $"# {DailySectionName.Date}",
-            timeProvider.GetUtcNow().ToString("yyyy-MM-dd"),
-            "",
-        };
-        todayContent.AddRange(todayWorkoutSection);
-        return todayContent;
+        dailyFileRepository.ArchiveDailyFile(yesterdayFile.Date);
+
+        var todayWorkouts = workoutRepository.GetTodayWorkout();
+        var newTodayFile = new DailyFile(
+            Date: timeProvider.GetUtcNow().DateTime,
+            Workouts: todayWorkouts,
+            Expenses: []
+        );
+        dailyFileRepository.WriteDailyFile(newTodayFile);
     }
 }

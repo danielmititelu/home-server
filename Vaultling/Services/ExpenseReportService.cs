@@ -1,31 +1,32 @@
 namespace Vaultling.Services;
 
-using System.Globalization;
+using Vaultling.Models;
+using Vaultling.Services.Repositories;
 
-public class ExpenseReportService(VaultRepository vaultRepository)
+public class ExpenseReportService(ExpenseRepository expenseRepository)
 {
     public void Generate()
     {
-        var expenses = vaultRepository.ReadExpenses();
+        var expenses = expenseRepository.ReadExpenses();
 
-        var reportLines = expenses
+        var months = expenses
             .GroupBy(e => e.Month)
             .OrderBy(g => g.Key)
-            .SelectMany(monthGroup =>
-            {
-                var month = monthGroup.Key;
-                var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month);
-                var categoryLines = monthGroup
+            .Select(monthGroup => new MonthlyExpenseSummary(
+                Month: monthGroup.Key,
+                Categories: monthGroup
                     .GroupBy(e => e.Category)
                     .OrderBy(g => g.Key)
-                    .Select(catGroup => $"- {catGroup.Key}: {catGroup.Sum(e => e.Amount):0.00} ron");
-                var totalLine = $"- total: {monthGroup.Sum(e => e.Amount):0.00} ron";
-                return new[] { $"## {month:00} - {monthName}" }
-                    .Concat(categoryLines)
-                    .Concat([totalLine]);
-            })
+                    .Select(catGroup => new CategoryExpenseTotal(
+                        Category: catGroup.Key,
+                        Amount: catGroup.Sum(e => e.Amount)
+                    ))
+                    .ToList(),
+                Total: monthGroup.Sum(e => e.Amount)
+            ))
             .ToList();
 
-        vaultRepository.WriteExpensesReport(reportLines);
+        var report = new ExpenseReport(months);
+        expenseRepository.WriteExpenseReport(report);
     }
 }
