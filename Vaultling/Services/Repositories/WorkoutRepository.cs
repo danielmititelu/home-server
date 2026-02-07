@@ -1,9 +1,5 @@
 namespace Vaultling.Services.Repositories;
 
-using Microsoft.Extensions.Options;
-using Vaultling.Configuration;
-using Vaultling.Models;
-
 public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider timeProvider)
 {
     private readonly WorkoutOptions _options = options.Value;

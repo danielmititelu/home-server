@@ -1,7 +1,4 @@
-namespace Vaultling;
-
-using Vaultling.Services;
-using Vaultling.Services.Repositories;
+namespace Vaultling.Services;
 
 public class VaultlingRunner(
     DailyFileManager dailyFileManager,

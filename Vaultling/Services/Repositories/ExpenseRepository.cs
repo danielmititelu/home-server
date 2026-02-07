@@ -1,9 +1,5 @@
 namespace Vaultling.Services.Repositories;
 
-using Microsoft.Extensions.Options;
-using Vaultling.Configuration;
-using Vaultling.Models;
-
 public class ExpenseRepository(IOptions<ExpenseOptions> options)
 {
     private readonly ExpenseOptions _options = options.Value;

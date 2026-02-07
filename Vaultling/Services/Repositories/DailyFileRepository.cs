@@ -1,9 +1,5 @@
 namespace Vaultling.Services.Repositories;
 
-using Microsoft.Extensions.Options;
-using Vaultling.Configuration;
-using Vaultling.Models;
-
 public class DailyFileRepository(IOptions<DailyFileOptions> options)
 {
     private readonly DailyFileOptions _options = options.Value;

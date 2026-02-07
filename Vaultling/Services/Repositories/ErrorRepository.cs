@@ -1,9 +1,5 @@
 namespace Vaultling.Services.Repositories;
 
-using Microsoft.Extensions.Options;
-using Vaultling.Configuration;
-using Vaultling.Models;
-
 public class ErrorRepository(IOptions<ErrorOptions> options, TimeProvider timeProvider)
 {
     private readonly ErrorOptions _options = options.Value;

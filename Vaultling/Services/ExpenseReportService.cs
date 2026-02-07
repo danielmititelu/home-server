@@ -1,8 +1,5 @@
 namespace Vaultling.Services;
 
-using Vaultling.Models;
-using Vaultling.Services.Repositories;
-
 public class ExpenseReportService(ExpenseRepository expenseRepository)
 {
     public void Generate()

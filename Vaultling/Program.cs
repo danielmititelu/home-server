@@ -1,9 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Vaultling;
-using Vaultling.Configuration;
-using Vaultling.Services;
-using Vaultling.Services.Repositories;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
