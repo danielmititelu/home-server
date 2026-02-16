@@ -22,9 +22,12 @@ public class DailyEntryService(
         dailyEntryRepository.ArchiveDailyFile(yesterdayEntry.Date);
 
         var todayWorkouts = workoutRepository.GetTodayWorkout();
+        var carryOverTodos = yesterdayEntry.Todos
+            .Where(t => !t.Line.Contains("[x]", StringComparison.OrdinalIgnoreCase));
         var newTodayEntry = new DailyEntry(
             Date: timeProvider.GetLocalNow(),
             Workouts: todayWorkouts,
+            Todos: carryOverTodos,
             Expenses: []
         );
         dailyEntryRepository.WriteDailyEntry(newTodayEntry);
