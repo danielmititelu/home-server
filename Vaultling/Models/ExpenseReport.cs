@@ -20,7 +20,7 @@ public record ExpenseLog(int Month, int Day, string Category, decimal Amount, st
                 return new ExpenseLog(
                     Month: int.Parse(parts[0]),
                     Day: int.Parse(parts[1]),
-                    Category: parts[2],
+                    Category: parts[2].ToLower(),
                     Amount: decimal.Parse(parts[3]),
                     Description: parts[4]
                 );
