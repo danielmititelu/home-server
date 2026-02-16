@@ -76,3 +76,22 @@ sudo systemctl disable homebot.service # Disable on boot
 sudo systemctl restart home-bot.service
 journalctl -u home-bot.service -f # view logs
 ```
+
+### How to give permission to a group
+```
+# Change folder ownership to a group
+sudo chown -R :groupname /path/to/folder
+
+# Give group read/write/execute permissions (existing files only)
+sudo chmod -R g+rwx /path/to/folder
+
+# Set setgid bit so new files inherit the group
+sudo chmod g+s /path/to/folder
+
+# (Optional) Set default ACL for future files
+sudo setfacl -R -m g:groupname:rwx /path/to/folder
+sudo setfacl -d -m g:groupname:rwx /path/to/folder
+
+# Add user to a group
+sudo usermod -a -G groupname username
+```
