@@ -34,5 +34,5 @@ pages:
                 icon: sh:immich
               - title: syncthing
                 url: https://syncthing.home
-                check-url: http://host.docker.internal:8123
+                check-url: http://syncthing:8384
                 icon: sh:syncthing

@@ -31,5 +31,5 @@ collabora.home {
 }
 
 syncthing.home {
-    reverse_proxy 12:8384
+    reverse_proxy syncthing:8384
 }

@@ -8,6 +8,7 @@ include:
     - compose/qbittorrent.yaml
     - compose/vaultwarden.yaml
     - compose/immich.yaml
+    - compose/syncthing.yaml
 
 networks:
   appnet:

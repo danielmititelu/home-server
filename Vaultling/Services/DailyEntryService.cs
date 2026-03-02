@@ -23,7 +23,7 @@ public class DailyEntryService(
 
         var todayWorkouts = workoutRepository.GetTodayWorkout();
         var carryOverTodos = yesterdayEntry.Todos
-            .Where(t => !t.Line.Contains("[x]", StringComparison.OrdinalIgnoreCase));
+            .Where(t => !t.Contains("[x]", StringComparison.OrdinalIgnoreCase));
         var newTodayEntry = new DailyEntry(
             Date: timeProvider.GetLocalNow(),
             Workouts: todayWorkouts,
