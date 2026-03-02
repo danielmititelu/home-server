@@ -36,3 +36,11 @@ pages:
                 url: https://syncthing.home
                 check-url: http://syncthing:8384
                 icon: sh:syncthing
+              - title: openwrt
+                url: http://192.168.1.1
+                check-url: http://192.168.1.1
+                icon: sh:openwrt
+              - title: cudy
+                url: http://192.168.1.120
+                check-url: http://192.168.1.120
+                icon: sh:openrouter
