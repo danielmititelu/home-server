@@ -5,6 +5,7 @@ usage() {
   echo "Usage: metis <up|down|restart|logs> <container name>"
   echo "       metis status"
   echo "       metis sync"
+  echo "       metis backup"
   exit 1
 }
 
@@ -35,5 +36,6 @@ case "$COMMAND" in
   logs)    docker compose logs -f "$SERVICE" ;;
   status)  status ;;
   sync)    /home-server/scripts/sync.sh ;;
+  backup)  /home-server/scripts/backup.sh ;;
   *)       usage ;;
 esac
