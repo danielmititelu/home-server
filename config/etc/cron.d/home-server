@@ -1,2 +1,2 @@
 0 2 * * * root /home-server/scripts/backup.sh >> /home-server/scripts/backup.log 2>&1
-0 3 * * * pi /usr/local/bin/metis vaultling >> /home-server/vaultling/vaultling.log 2>&1
+0 3 * * * pi /usr/local/bin/metis vaultling >> /home-server/scripts/vaultling.log 2>&1

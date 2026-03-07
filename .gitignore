@@ -1,9 +1,7 @@
-# Ignore the environment file for the backup script
-backup/backup-srv-to-windows.env
 .env
 venv
 .venv
-node_modules
 obj
 bin
 vaultling.log
+backup.log
