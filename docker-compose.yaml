@@ -3,10 +3,8 @@ include:
     - compose/caddy.yaml
     - compose/glance.yaml
     - compose/homeassistant.yaml
-    - compose/postgresql.yaml
     - compose/qbittorrent.yaml
     - compose/vaultwarden.yaml
-    - compose/immich.yaml
     - compose/syncthing.yaml
 
 networks:

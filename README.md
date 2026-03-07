@@ -92,23 +92,6 @@ sudo systemctl restart home-bot.service
 journalctl -u home-bot.service -f
 ```
 
-### How to run sql on postgresql?
-
-```
-docker exec -it postgresql psql -U postgres
-
-# useful commands:
-\l   -> list databases
-\du  -> list roles/users
-\dt  -> list tables
-\c DBNAME -> change current db
-\q   -> quit
-
-create user immich with password 'immich_pw';
-create database immich owner immich;
-create extension if not exists vector;
-```
-
 ### How to give permission to a group
 ```
 sudo chown -R :groupname /path/to/folder
