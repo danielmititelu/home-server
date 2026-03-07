@@ -40,4 +40,9 @@ run_backup \
   /srv/homeassistant/config \
   ""
 
+run_backup \
+  /srv/samba/backup/vaultwarden \
+  /srv/vaultwarden \
+  ""
+
 echo "==> Backup complete"
