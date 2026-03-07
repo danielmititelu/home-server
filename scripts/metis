@@ -1,6 +1,6 @@
 #!/bin/sh
 COMPOSE_DIR="/home-server"
-SYSTEMD_SERVICES="kodi"
+SYSTEMD_SERVICES="kodi homebot"
 
 usage() {
   echo "Usage: metis <start|stop|restart|logs> <container|service>"
