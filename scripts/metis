@@ -2,17 +2,36 @@
 COMPOSE_DIR="/home-server"
 
 usage() {
-  echo "Usage: metis <up|down> <container name>"
+  echo "Usage: metis <up|down|restart|logs> <container name>"
+  echo "       metis status"
   exit 1
 }
 
-[ $# -lt 2 ] && usage
+status() {
+  cpu=$(top -bn1 | awk '/^%Cpu/{print $2}')
+  mem=$(free | awk '/Mem:/{printf "%.1f", $3/$2*100}')
+  temp=$(awk '{printf "%.1f", $1/1000}' /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "N/A")
+  echo "CPU Usage:   ${cpu}%"
+  echo "Memory:      ${mem}%"
+  echo "Temperature: ${temp} °C"
+}
+
+[ $# -lt 1 ] && usage
 
 COMMAND="$1"
 SERVICE="$2"
 
 case "$COMMAND" in
-  up)   docker compose up -d "$SERVICE" ;;
-  down) docker compose down "$SERVICE" ;;
-  *)    usage ;;
+  up|down|restart|logs)
+    [ -z "$SERVICE" ] && usage
+    ;;
+esac
+
+case "$COMMAND" in
+  up)      docker compose up -d "$SERVICE" ;;
+  down)    docker compose down "$SERVICE" ;;
+  restart) docker compose restart "$SERVICE" ;;
+  logs)    docker compose logs -f "$SERVICE" ;;
+  status)  status ;;
+  *)       usage ;;
 esac
