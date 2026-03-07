@@ -41,6 +41,8 @@ metis status              # Show CPU usage, memory and temperature
 metis sync                # Symlink config files into the system
 metis backup              # Run restic backups (samba, homeassistant, vaultwarden)
 metis vaultling           # Run Vaultling (Obsidian vault processor)
+metis start kodi          # Start Kodi
+metis stop kodi           # Stop Kodi
 metis init                # Bootstrap a fresh Raspberry Pi
 ```
 
