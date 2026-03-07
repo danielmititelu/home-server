@@ -6,7 +6,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - /srv/glance/config:/app/config
+      - /home-server/config/srv/glance/config:/app/config
       - /srv/glance/assets:/app/assets
       - /etc/localtime:/etc/localtime:ro
     networks:
