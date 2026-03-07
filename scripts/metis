@@ -4,6 +4,7 @@ COMPOSE_DIR="/home-server"
 usage() {
   echo "Usage: metis <up|down|restart|logs> <container name>"
   echo "       metis status"
+  echo "       metis sync"
   exit 1
 }
 
@@ -33,5 +34,6 @@ case "$COMMAND" in
   restart) docker compose restart "$SERVICE" ;;
   logs)    docker compose logs -f "$SERVICE" ;;
   status)  status ;;
+  sync)    /home-server/scripts/sync.sh ;;
   *)       usage ;;
 esac
