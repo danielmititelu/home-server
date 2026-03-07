@@ -7,6 +7,7 @@ usage() {
   echo "       metis sync"
   echo "       metis backup"
   echo "       metis vaultling"
+  echo "       metis init"
   exit 1
 }
 
@@ -44,5 +45,6 @@ case "$COMMAND" in
   sync)    /home-server/scripts/sync.sh ;;
   backup)    /home-server/scripts/backup.sh ;;
   vaultling) vaultling ;;
+  init)      /home-server/scripts/init.sh ;;
   *)         usage ;;
 esac

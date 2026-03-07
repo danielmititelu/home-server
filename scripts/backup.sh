@@ -46,3 +46,4 @@ run_backup \
   ""
 
 echo "==> Backup complete"
+chown -R pi:pi /srv/samba/backup
