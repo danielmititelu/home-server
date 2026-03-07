@@ -21,7 +21,7 @@ RESTIC_PASSWORD=
 
 4. Start containers:
 ```
-metis up <service>
+metis start <service>
 ```
 
 5. Log out and back in (or reboot) for `pi` to use Docker without sudo.
@@ -33,20 +33,19 @@ metis up <service>
 `metis` is the CLI tool for managing this server. Run `metis` with no arguments for usage.
 
 ```
-metis up <service>        # Start a container (detached)
-metis down <service>      # Stop a container
-metis restart <service>   # Restart a container
-metis logs <service>      # Follow container logs (Ctrl+C to stop)
+metis start <container|service>   # Start a container or systemd service
+metis stop <container|service>    # Stop a container or systemd service
+metis restart <container|service> # Restart a container or systemd service
+metis logs <container|service>    # Follow logs (Ctrl+C to stop)
 metis status              # Show CPU usage, memory and temperature
 metis sync                # Symlink config files into the system
 metis backup              # Run restic backups (samba, homeassistant, vaultwarden)
 metis vaultling           # Run Vaultling (Obsidian vault processor)
-metis start kodi          # Start Kodi
-metis stop kodi           # Stop Kodi
 metis init                # Bootstrap a fresh Raspberry Pi
 ```
 
-Service names match container names: `caddy`, `glance`, `homeassistant`, `vaultwarden`, `qbittorrent`, `syncthing`, `pihole`.
+Service names for containers: `caddy`, `glance`, `homeassistant`, `vaultwarden`, `qbittorrent`, `syncthing`, `pihole`.
+Systemd services: `kodi`.
 
 ---
 
@@ -79,9 +78,7 @@ metis logs qbittorrent
 
 ```
 metis sync
-sudo systemctl enable kodi
-sudo systemctl start kodi
-reboot
+metis start kodi
 ```
 
 ### Commands for a service running with systemd

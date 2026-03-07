@@ -1,16 +1,18 @@
 #!/bin/sh
 COMPOSE_DIR="/home-server"
+SYSTEMD_SERVICES="kodi"
 
 usage() {
-  echo "Usage: metis <up|down|restart|logs> <container name>"
+  echo "Usage: metis <start|stop|restart|logs> <container|service>"
   echo "       metis status"
   echo "       metis sync"
   echo "       metis backup"
   echo "       metis vaultling"
   echo "       metis init"
-  echo "       metis <start|stop> <service name>"
   exit 1
 }
+
+is_systemd() { echo "$SYSTEMD_SERVICES" | grep -qw "$1"; }
 
 status() {
   cpu=$(top -bn1 | awk '/^%Cpu/{print $2}')
@@ -27,17 +29,23 @@ vaultling() {
 }
 
 start() {
-  case "$SERVICE" in
-    kodi) systemctl start kodi ;;
-    *)    echo "metis: unknown service '$SERVICE'"; usage ;;
-  esac
+  if is_systemd "$SERVICE"; then systemctl start "$SERVICE"
+  else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" up -d "$SERVICE"; fi
 }
 
 stop() {
-  case "$SERVICE" in
-    kodi) systemctl stop kodi ;;
-    *)    echo "metis: unknown service '$SERVICE'"; usage ;;
-  esac
+  if is_systemd "$SERVICE"; then systemctl stop "$SERVICE"
+  else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" stop "$SERVICE"; fi
+}
+
+restart() {
+  if is_systemd "$SERVICE"; then systemctl restart "$SERVICE"
+  else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" restart "$SERVICE"; fi
+}
+
+logs() {
+  if is_systemd "$SERVICE"; then journalctl -u "$SERVICE" -f
+  else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" logs -f "$SERVICE"; fi
 }
 
 [ $# -lt 1 ] && usage
@@ -46,22 +54,20 @@ COMMAND="$1"
 SERVICE="$2"
 
 case "$COMMAND" in
-  up|down|restart|logs)
+  start|stop|restart|logs)
     [ -z "$SERVICE" ] && usage
     ;;
 esac
 
 case "$COMMAND" in
-  up)      docker compose up -d "$SERVICE" ;;
-  down)    docker compose down "$SERVICE" ;;
-  restart) docker compose restart "$SERVICE" ;;
-  logs)    docker compose logs -f "$SERVICE" ;;
-  status)  status ;;
-  sync)    /home-server/scripts/sync.sh ;;
+  start)     start ;;
+  stop)      stop ;;
+  restart)   restart ;;
+  logs)      logs ;;
+  status)    status ;;
+  sync)      /home-server/scripts/sync.sh ;;
   backup)    /home-server/scripts/backup.sh ;;
   vaultling) vaultling ;;
   init)      /home-server/scripts/init.sh ;;
-  start)     start ;;
-  stop)      stop ;;
   *)         usage ;;
 esac
