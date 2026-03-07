@@ -33,7 +33,7 @@ pages:
                 check-url: http://immich:2283
                 icon: sh:immich
               - title: syncthing
-                url: https://syncthing.home
+                url: http://192.168.1.199:8384
                 check-url: http://syncthing:8384
                 icon: sh:syncthing
               - title: openwrt
