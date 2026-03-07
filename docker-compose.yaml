@@ -1,11 +1,11 @@
 include:
   - path:
-    - compose/caddy.yaml
-    - compose/glance.yaml
-    - compose/homeassistant.yaml
-    - compose/qbittorrent.yaml
-    - compose/vaultwarden.yaml
-    - compose/syncthing.yaml
+    - docker/caddy.yaml
+    - docker/glance.yaml
+    - docker/homeassistant.yaml
+    - docker/qbittorrent.yaml
+    - docker/vaultwarden.yaml
+    - docker/syncthing.yaml
 
 networks:
   appnet:
