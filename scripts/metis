@@ -29,22 +29,22 @@ vaultling() {
 }
 
 start() {
-  if is_systemd "$SERVICE"; then systemctl start "$SERVICE"
+  if is_systemd "$SERVICE"; then sudo systemctl start "$SERVICE"
   else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" up -d "$SERVICE"; fi
 }
 
 stop() {
-  if is_systemd "$SERVICE"; then systemctl stop "$SERVICE"
+  if is_systemd "$SERVICE"; then sudo systemctl stop "$SERVICE"
   else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" stop "$SERVICE"; fi
 }
 
 restart() {
-  if is_systemd "$SERVICE"; then systemctl restart "$SERVICE"
+  if is_systemd "$SERVICE"; then sudo systemctl restart "$SERVICE"
   else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" restart "$SERVICE"; fi
 }
 
 logs() {
-  if is_systemd "$SERVICE"; then journalctl -u "$SERVICE" -f
+  if is_systemd "$SERVICE"; then sudo journalctl -u "$SERVICE" -f
   else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" logs -f "$SERVICE"; fi
 }
 

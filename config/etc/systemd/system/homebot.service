@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home-server/vaultling/HomeBot/bin/Release/net10.0/publish
+WorkingDirectory=/home-server/src/HomeBot/bin/Release/net10.0/publish
 ExecStart=/home/pi/.dotnet/dotnet HomeBot.dll
 EnvironmentFile=/home-server/.env
 Restart=always
