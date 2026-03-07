@@ -6,10 +6,6 @@ homeassistant.home {
     reverse_proxy host.docker.internal:8123
 }
 
-pi-hole.home {
-    reverse_proxy pihole:80
-}
-
 dashboard.home {
     reverse_proxy glance:8080
 }
@@ -20,14 +16,6 @@ qbittorrent.home {
 
 vaultwarden.home {
     reverse_proxy vaultwarden:80
-}
-
-immich.home {
-    reverse_proxy immich:2283
-}
-
-collabora.home {
-    reverse_proxy collabora:9980
 }
 
 syncthing.home {
