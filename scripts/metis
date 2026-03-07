@@ -6,6 +6,7 @@ usage() {
   echo "       metis status"
   echo "       metis sync"
   echo "       metis backup"
+  echo "       metis vaultling"
   exit 1
 }
 
@@ -16,6 +17,11 @@ status() {
   echo "CPU Usage:   ${cpu}%"
   echo "Memory:      ${mem}%"
   echo "Temperature: ${temp} °C"
+}
+
+vaultling() {
+  cd /home-server/vaultling/Vaultling/bin/Release/net10.0/publish
+  /home/pi/.dotnet/dotnet Vaultling.dll
 }
 
 [ $# -lt 1 ] && usage
@@ -36,6 +42,7 @@ case "$COMMAND" in
   logs)    docker compose logs -f "$SERVICE" ;;
   status)  status ;;
   sync)    /home-server/scripts/sync.sh ;;
-  backup)  /home-server/scripts/backup.sh ;;
-  *)       usage ;;
+  backup)    /home-server/scripts/backup.sh ;;
+  vaultling) vaultling ;;
+  *)         usage ;;
 esac
