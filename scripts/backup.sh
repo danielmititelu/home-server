@@ -18,9 +18,9 @@ run_backup() {
 
   echo "==> Backing up $SOURCE to $REPO"
   if [ -n "$EXCLUDE" ]; then
-    restic -r "$REPO" backup "$SOURCE" --exclude "$EXCLUDE"
+    restic -r "$REPO" backup $SOURCE --exclude "$EXCLUDE"
   else
-    restic -r "$REPO" backup "$SOURCE"
+    restic -r "$REPO" backup $SOURCE
   fi
 
   echo "==> Pruning $REPO"
@@ -37,7 +37,7 @@ run_backup \
 
 run_backup \
   /srv/samba/backup/homeassistant \
-  /srv/homeassistant/config \
+  "/srv/homeassistant/config /home-server/.env" \
   ""
 
 run_backup \
