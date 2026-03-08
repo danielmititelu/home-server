@@ -24,7 +24,7 @@ status() {
 }
 
 vaultling() {
-  cd /home-server/vaultling/Vaultling/bin/Release/net10.0/publish
+  cd /home-server/src/Vaultling/bin/Release/net10.0/publish
   /home/pi/.dotnet/dotnet Vaultling.dll
 }
 
