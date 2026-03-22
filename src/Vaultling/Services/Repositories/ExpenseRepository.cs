@@ -25,12 +25,12 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
         File.WriteAllLines(_options.ReportFile, markdownLines);
     }
 
-    public static string ToCsvLine(ExpenseLog expense)
+    internal static string ToCsvLine(ExpenseLog expense)
     {
         return $"{expense.Month},{expense.Day},{expense.Category},{expense.Amount},{expense.Description}";
     }
 
-    public static IEnumerable<ExpenseLog> ParseExpenseLogs(IEnumerable<string> csvLines)
+    internal static IEnumerable<ExpenseLog> ParseExpenseLogs(IEnumerable<string> csvLines)
     {
         return csvLines
             .Skip(1)

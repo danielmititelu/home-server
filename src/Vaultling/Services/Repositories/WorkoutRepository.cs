@@ -55,12 +55,12 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
         File.WriteAllLines(_options.ReportFile, markdownLines);
     }
 
-    public static string ToCsvLine(WorkoutLog log)
+    internal static string ToCsvLine(WorkoutLog log)
     {
         return $"{log.Month},{log.Day},{log.Type},{log.Reps}";
     }
 
-    public static IEnumerable<WorkoutLog> ParseWorkoutLogs(IEnumerable<string> csvLines)
+    internal static IEnumerable<WorkoutLog> ParseWorkoutLogs(IEnumerable<string> csvLines)
     {
         return csvLines
             .Skip(1)

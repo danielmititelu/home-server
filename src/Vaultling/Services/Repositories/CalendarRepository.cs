@@ -44,7 +44,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         return pathTemplate.Replace("{year}", year.ToString(CultureInfo.InvariantCulture));
     }
 
-    public static IEnumerable<RecurringEvent> ParseRecurringEvents(IEnumerable<string> csvLines)
+    internal static IEnumerable<RecurringEvent> ParseRecurringEvents(IEnumerable<string> csvLines)
     {
         return csvLines
             .Skip(1)
@@ -58,7 +58,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             });
     }
 
-    public static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
+    internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
     {
         var type = recurring.Type.ToLowerInvariant();
 

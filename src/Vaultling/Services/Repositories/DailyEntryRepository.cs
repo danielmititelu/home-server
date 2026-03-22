@@ -28,7 +28,7 @@ public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
         File.WriteAllLines(_options.TodayFile, markdownLines);
     }
 
-    public static DailyEntry ParseDailyEntry(IEnumerable<string> lines)
+    internal static DailyEntry ParseDailyEntry(IEnumerable<string> lines)
     {
         var sectionsContent = new Dictionary<string, List<string>>();
         string? currentSection = null;
