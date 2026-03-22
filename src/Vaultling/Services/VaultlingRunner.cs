@@ -4,6 +4,7 @@ public class VaultlingRunner(
     DailyEntryService dailyEntryService,
     WorkoutService workoutService,
     ExpenseService expenseService,
+    CalendarService calendarService,
     ErrorRepository errorRepository)
 {
     public void Run()
@@ -13,6 +14,7 @@ public class VaultlingRunner(
             dailyEntryService.ProcessDailyEntry();
             workoutService.ProduceWorkoutReport();
             expenseService.ProduceExpenseReport();
+            calendarService.ProduceCalendarReport();
         }
         catch (Exception ex)
         {
