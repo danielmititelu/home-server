@@ -8,8 +8,13 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
 
     public IEnumerable<ExpenseLog> ReadExpenses()
     {
-        var lines = File.ReadLines(_options.DataFile);
-        return ParseExpenseLogs(lines);
+        return Utils.ParseCsv(File.ReadLines(_options.DataFile), parts => new ExpenseLog(
+            Month: int.Parse(parts[0]),
+            Day: int.Parse(parts[1]),
+            Category: parts[2].ToLower(),
+            Amount: decimal.Parse(parts[3]),
+            Description: parts[4]
+        ));
     }
 
     public void AppendExpenses(IEnumerable<ExpenseLog> expenses)
@@ -30,16 +35,5 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
     internal static string ToCsvLine(ExpenseLog expense)
     {
         return $"{expense.Month},{expense.Day},{expense.Category},{expense.Amount},{expense.Description}";
-    }
-
-    internal static IEnumerable<ExpenseLog> ParseExpenseLogs(IEnumerable<string> csvLines)
-    {
-        return Utils.ParseCsv(csvLines, parts => new ExpenseLog(
-            Month: int.Parse(parts[0]),
-            Day: int.Parse(parts[1]),
-            Category: parts[2].ToLower(),
-            Amount: decimal.Parse(parts[3]),
-            Description: parts[4]
-        ));
     }
 }

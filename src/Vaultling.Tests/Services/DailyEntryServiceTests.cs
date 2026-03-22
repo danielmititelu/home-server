@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using Vaultling.Configuration;
 using Vaultling.Models;
 using Vaultling.Services;
 using Vaultling.Services.Repositories;
@@ -8,11 +10,20 @@ public class DailyEntryServiceTests
 {
     private static readonly string TestDataPath = Path.Combine("TestData", "daily-entry.md");
 
+    private static DailyEntry ReadEntryFromFile(string path)
+    {
+        var repo = new DailyEntryRepository(Options.Create(new DailyEntryOptions
+        {
+            TodayFile = path,
+            HistoryDirectory = Path.GetTempPath()
+        }));
+        return repo.ReadDailyEntry();
+    }
+
     [Fact]
     public void ToWorkoutLogs_ConvertsCorrectly()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var entry = DailyEntryRepository.ParseDailyEntry(lines);
+        var entry = ReadEntryFromFile(TestDataPath);
         var logs = DailyEntryService.ToWorkoutLogs(entry).ToList();
 
         Assert.Equal(2, logs.Count);
@@ -25,8 +36,7 @@ public class DailyEntryServiceTests
     [Fact]
     public void ToExpenseLogs_ConvertsCorrectly()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var entry = DailyEntryRepository.ParseDailyEntry(lines);
+        var entry = ReadEntryFromFile(TestDataPath);
         var logs = DailyEntryService.ToExpenseLogs(entry).ToList();
 
         Assert.Equal(2, logs.Count);
@@ -39,11 +49,13 @@ public class DailyEntryServiceTests
     [Fact]
     public void GenerateMarkdownForDailyEntry_ThenParse_RoundTrips()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var original = DailyEntryRepository.ParseDailyEntry(lines);
+        var original = ReadEntryFromFile(TestDataPath);
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(original);
-        var reparsed = DailyEntryRepository.ParseDailyEntry(markdown);
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, markdown);
+        var reparsed = ReadEntryFromFile(tempFile);
+        File.Delete(tempFile);
 
         Assert.Equal(original.Date.Date, reparsed.Date.Date);
         Assert.Equal(original.Workouts.Count(), reparsed.Workouts.Count());

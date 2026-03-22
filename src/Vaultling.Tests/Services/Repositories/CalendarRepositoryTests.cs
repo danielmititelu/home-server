@@ -1,69 +1,100 @@
-using Vaultling.Models;
+using Microsoft.Extensions.Options;
+using Vaultling.Configuration;
 using Vaultling.Services.Repositories;
 
 namespace Vaultling.Tests;
 
 public class CalendarRepositoryTests
 {
-    [Fact]
-    public void ParseRecurringEvents_ParsesWeeklySchedule()
+    private static CalendarRepository MakeRepository(string eventsFile)
     {
-        var lines = new[]
+        return new CalendarRepository(Options.Create(new CalendarOptions
         {
+            EventsFile = eventsFile,
+            ReportFile = ""
+        }));
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_ParsesWeeklySchedule()
+    {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, [
             "schedule,note",
             "thursday at 18:00,Piano lesson"
-        };
+        ]);
 
-        var recurring = CalendarRepository.ParseRecurringEvents(lines).Single();
+        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
 
-        Assert.Equal("thursday", recurring.Type);
-        Assert.Equal("18:00", recurring.Schedule);
-        Assert.Equal("Piano lesson", recurring.Note);
+        File.Delete(tempFile);
+
+        var first = occurrences.First();
+        Assert.True(occurrences.Count > 0);
+        Assert.Equal(DayOfWeek.Thursday, first.Date.DayOfWeek);
+        Assert.Equal(18, first.Date.Hour);
+        Assert.Equal("Piano lesson", first.Note);
     }
 
     [Fact]
-    public void ParseRecurringEvents_ParsesMonthlySchedule()
+    public void ReadCalendarOccurrences_ParsesMonthlySchedule()
     {
-        var lines = new[]
-        {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, [
             "schedule,note",
             "monthly 15,Pay rent"
-        };
+        ]);
 
-        var recurring = CalendarRepository.ParseRecurringEvents(lines).Single();
+        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
 
-        Assert.Equal("monthly", recurring.Type);
-        Assert.Equal("15", recurring.Schedule);
-        Assert.Equal("Pay rent", recurring.Note);
+        File.Delete(tempFile);
+
+        Assert.Equal(12, occurrences.Count);
+        Assert.All(occurrences, o => Assert.Equal(15, o.Date.Day));
+        Assert.All(occurrences, o => Assert.Equal("Pay rent", o.Note));
     }
 
     [Fact]
-    public void ParseRecurringEvents_ParsesYearlyMonthDaySchedule()
+    public void ReadCalendarOccurrences_ParsesYearlyMonthDaySchedule()
     {
-        var lines = new[]
-        {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, [
             "schedule,note",
             "03-15,Doctor appointment"
-        };
+        ]);
 
-        var recurring = CalendarRepository.ParseRecurringEvents(lines).Single();
+        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
 
-        Assert.Equal("march", recurring.Type);
-        Assert.Equal("15", recurring.Schedule);
-        Assert.Equal("Doctor appointment", recurring.Note);
+        File.Delete(tempFile);
+
+        var only = Assert.Single(occurrences);
+        Assert.Equal(new DateTime(2026, 3, 15), only.Date);
+        Assert.Equal("Doctor appointment", only.Note);
     }
 
     [Fact]
     public void GetOccurrences_MonthlySkipsInvalidDates()
     {
-        var recurring = new RecurringEvent("monthly", "31", "Month end");
+        var lines = new[]
+        {
+            "schedule,note",
+            "monthly 31,Month end"
+        };
+
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, lines);
+        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
+
+        File.Delete(tempFile);
+
         var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var to = new DateTimeOffset(2026, 3, 31, 23, 59, 59, TimeSpan.Zero);
 
-        var occurrences = CalendarRepository.GetOccurrences(recurring, from, to).ToList();
+        var bounded = occurrences
+            .Where(o => o.Date >= from.Date && o.Date <= to.Date)
+            .ToList();
 
-        Assert.Equal(2, occurrences.Count);
-        Assert.Equal(new DateTime(2026, 1, 31), occurrences[0].Date);
-        Assert.Equal(new DateTime(2026, 3, 31), occurrences[1].Date);
+        Assert.Equal(2, bounded.Count);
+        Assert.Equal(new DateTime(2026, 1, 31), bounded[0].Date);
+        Assert.Equal(new DateTime(2026, 3, 31), bounded[1].Date);
     }
 }

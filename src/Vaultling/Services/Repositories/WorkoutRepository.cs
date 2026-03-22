@@ -48,8 +48,12 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
             return [];
         }
 
-        var lines = File.ReadLines(_options.LogFile);
-        return ParseWorkoutLogs(lines);
+        return Utils.ParseCsv(File.ReadLines(_options.LogFile), parts => new WorkoutLog(
+            Month: parts[0],
+            Day: parts[1],
+            Type: parts[2],
+            Reps: parts[3]
+        ));
     }
 
     public void WriteWorkoutReport(IEnumerable<string> markdownLines)
@@ -60,15 +64,5 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
     internal static string ToCsvLine(WorkoutLog log)
     {
         return $"{log.Month},{log.Day},{log.Type},{log.Reps}";
-    }
-
-    internal static IEnumerable<WorkoutLog> ParseWorkoutLogs(IEnumerable<string> csvLines)
-    {
-        return Utils.ParseCsv(csvLines, parts => new WorkoutLog(
-            Month: parts[0],
-            Day: parts[1],
-            Type: parts[2],
-            Reps: parts[3]
-        ));
     }
 }

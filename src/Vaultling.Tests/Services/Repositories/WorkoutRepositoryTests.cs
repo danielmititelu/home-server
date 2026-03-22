@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Options;
+using Vaultling.Configuration;
+using Vaultling.Models;
 using Vaultling.Services.Repositories;
 
 namespace Vaultling.Tests;
@@ -5,39 +8,42 @@ namespace Vaultling.Tests;
 public class WorkoutRepositoryTests
 {
     private static readonly string TestDataPath = Path.Combine("TestData", "workouts.csv");
+    private readonly WorkoutRepository _repository;
+    private readonly List<WorkoutLog> _logs;
 
-    [Fact]
-    public void ParseWorkoutLogs_ReadsAllWorkoutRows()
+    public WorkoutRepositoryTests()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var logs = WorkoutRepository.ParseWorkoutLogs(lines).ToList();
-
-        Assert.Equal(3, logs.Count);
+        _repository = new WorkoutRepository(
+            Options.Create(new WorkoutOptions { LogFile = TestDataPath }),
+            TimeProvider.System);
+        _logs = _repository.ReadWorkoutLogs().ToList();
     }
 
     [Fact]
-    public void ParseWorkoutLogs_SkipsHeader()
+    public void ReadWorkoutLogs_ReadsAllWorkoutRows()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var first = WorkoutRepository.ParseWorkoutLogs(lines).First();
+        Assert.Equal(3, _logs.Count);
+    }
+
+    [Fact]
+    public void ReadWorkoutLogs_SkipsHeader()
+    {
+        var first = _logs.First();
 
         Assert.Equal("01", first.Month);
         Assert.Equal("05", first.Day);
     }
 
     [Fact]
-    public void ParseWorkoutLogs_ParsesFieldsCorrectly()
+    public void ReadWorkoutLogs_ParsesFieldsCorrectly()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var logs = WorkoutRepository.ParseWorkoutLogs(lines).ToList();
-
-        var first = logs[0];
+        var first = _logs[0];
         Assert.Equal("01", first.Month);
         Assert.Equal("05", first.Day);
         Assert.Equal("pushups", first.Type);
         Assert.Equal("20-20-20", first.Reps);
 
-        var last = logs[2];
+        var last = _logs[2];
         Assert.Equal("02", last.Month);
         Assert.Equal("10", last.Day);
         Assert.Equal("pullups", last.Type);
@@ -47,11 +53,11 @@ public class WorkoutRepositoryTests
     [Fact]
     public void ToCsvLine_RoundTrips()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var log = WorkoutRepository.ParseWorkoutLogs(lines).First();
+        var log = _logs.First();
 
         var csv = WorkoutRepository.ToCsvLine(log);
-        var reparsed = WorkoutRepository.ParseWorkoutLogs(new[] { "header", csv }).Single();
+        var parts = csv.Split(',');
+        var reparsed = new WorkoutLog(parts[0], parts[1], parts[2], parts[3]);
 
         Assert.Equal(log, reparsed);
     }

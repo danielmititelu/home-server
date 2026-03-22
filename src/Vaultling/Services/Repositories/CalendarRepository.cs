@@ -21,7 +21,12 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         if (string.IsNullOrEmpty(recurringFile) || !File.Exists(recurringFile))
             return [];
 
-        var recurring = ParseRecurringEvents(File.ReadLines(recurringFile));
+        var recurring = Utils.ParseCsv(File.ReadLines(recurringFile), parts =>
+        {
+            var schedule = parts[0].Trim().ToLowerInvariant();
+            var note = parts[1].Trim();
+            return ParseRecurringSchedule(schedule, note);
+        }, maxColumnSplit: 2);
         var from = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var to = new DateTimeOffset(year, 12, 31, 23, 59, 59, TimeSpan.Zero);
 
@@ -43,16 +48,6 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             return "";
 
         return pathTemplate.Replace("{year}", year.ToString(CultureInfo.InvariantCulture));
-    }
-
-    internal static IEnumerable<RecurringEvent> ParseRecurringEvents(IEnumerable<string> csvLines)
-    {
-        return Utils.ParseCsv(csvLines, parts =>
-        {
-            var schedule = parts[0].Trim().ToLowerInvariant();
-            var note = parts[1].Trim();
-            return ParseRecurringSchedule(schedule, note);
-        }, maxColumnSplit: 2);
     }
 
     internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
@@ -97,7 +92,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
 
     private static IEnumerable<CalendarOccurrence> GetYearlyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
     {
-        var monthIndex = Array.FindIndex(MonthNames, m => m == recurring.Type.ToLowerInvariant()) + 1;
+        var monthIndex = Array.FindIndex(MonthNames, m => m.Equals(recurring.Type, StringComparison.InvariantCultureIgnoreCase)) + 1;
         var day = int.Parse(recurring.Schedule);
 
         for (var year = from.Year; year <= to.Year; year++)
@@ -110,7 +105,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
 
     private static IEnumerable<CalendarOccurrence> GetWeeklyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
     {
-        var targetDay = (DayOfWeek)Array.FindIndex(DayNames, d => d == recurring.Type.ToLowerInvariant());
+        var targetDay = (DayOfWeek)Array.FindIndex(DayNames, d => d.Equals(recurring.Type, StringComparison.InvariantCultureIgnoreCase));
         var timeParts = recurring.Schedule.Split(':');
         var hour = int.Parse(timeParts[0]);
         var minute = int.Parse(timeParts[1]);

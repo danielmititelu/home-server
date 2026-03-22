@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Options;
+using Vaultling.Configuration;
+using Vaultling.Models;
 using Vaultling.Services.Repositories;
 
 namespace Vaultling.Tests;
@@ -5,24 +8,31 @@ namespace Vaultling.Tests;
 public class DailyEntryRepositoryTests
 {
     private static readonly string TestDataPath = Path.Combine("TestData", "daily-entry.md");
+    private readonly DailyEntryRepository _repository;
+    private readonly DailyEntry _entry;
 
-    [Fact]
-    public void ParseDailyEntry_ReadsDateCorrectly()
+    public DailyEntryRepositoryTests()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var entry = DailyEntryRepository.ParseDailyEntry(lines);
-
-        Assert.Equal(2026, entry.Date.Year);
-        Assert.Equal(3, entry.Date.Month);
-        Assert.Equal(7, entry.Date.Day);
+        _repository = new DailyEntryRepository(Options.Create(new DailyEntryOptions
+        {
+            TodayFile = TestDataPath,
+            HistoryDirectory = Path.GetTempPath()
+        }));
+        _entry = _repository.ReadDailyEntry();
     }
 
     [Fact]
-    public void ParseDailyEntry_ReadsWorkouts()
+    public void ReadDailyEntry_ReadsDateCorrectly()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var entry = DailyEntryRepository.ParseDailyEntry(lines);
-        var workouts = entry.Workouts.ToList();
+        Assert.Equal(2026, _entry.Date.Year);
+        Assert.Equal(3, _entry.Date.Month);
+        Assert.Equal(7, _entry.Date.Day);
+    }
+
+    [Fact]
+    public void ReadDailyEntry_ReadsWorkouts()
+    {
+        var workouts = _entry.Workouts.ToList();
 
         Assert.Equal(2, workouts.Count);
         Assert.Equal("pushups", workouts[0].Exercise);
@@ -32,11 +42,9 @@ public class DailyEntryRepositoryTests
     }
 
     [Fact]
-    public void ParseDailyEntry_ReadsExpenses()
+    public void ReadDailyEntry_ReadsExpenses()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var entry = DailyEntryRepository.ParseDailyEntry(lines);
-        var expenses = entry.Expenses.ToList();
+        var expenses = _entry.Expenses.ToList();
 
         Assert.Equal(2, expenses.Count);
         Assert.Equal("food", expenses[0].Category);
@@ -47,11 +55,9 @@ public class DailyEntryRepositoryTests
     }
 
     [Fact]
-    public void ParseDailyEntry_ReadsTodos()
+    public void ReadDailyEntry_ReadsTodos()
     {
-        var lines = File.ReadLines(TestDataPath);
-        var entry = DailyEntryRepository.ParseDailyEntry(lines);
-        var todos = entry.Todos.ToList();
+        var todos = _entry.Todos.ToList();
 
         Assert.Equal(2, todos.Count);
         Assert.Equal("Buy milk", todos[0]);
