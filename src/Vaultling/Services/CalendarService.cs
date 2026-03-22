@@ -8,8 +8,6 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
 
         foreach (var year in Enumerable.Range(currentYear, 3))
         {
-            calendarRepository.MaterializeRecurringEvents(year);
-
             var occurrences = calendarRepository.ReadCalendarOccurrences(year).ToList();
 
             var eventsByMonth = occurrences

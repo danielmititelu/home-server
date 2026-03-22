@@ -1,6 +1,7 @@
 namespace Vaultling.Models;
 
 using System.Globalization;
+using Vaultling.Utils;
 
 public record MonthlyCalendarSummary(
     int Month,
@@ -22,41 +23,19 @@ public record CalendarReport(List<MonthlyCalendarSummary> Months)
             sections.Add($"## {month.Month:00} - {monthName}{(isCurrentMonth ? " ⭐" : "")}");
             sections.Add("");
 
-            var daysInMonth = DateTime.DaysInMonth(month.Year, month.Month);
-            var firstDay = new DateTime(month.Year, month.Month, 1);
             var eventDays = month.Events.Select(e => e.Date.Day).ToHashSet();
 
-            sections.Add("| Mon | Tue | Wed | Thu | Fri | Sat | Sun |");
-            sections.Add("|-----|-----|-----|-----|-----|-----|-----|");
-
-            var currentWeek = new List<string>();
-            var startDayOfWeek = (int)firstDay.DayOfWeek;
-            startDayOfWeek = startDayOfWeek == 0 ? 6 : startDayOfWeek - 1;
-
-            for (int i = 0; i < startDayOfWeek; i++)
-                currentWeek.Add("     ");
-
-            for (int day = 1; day <= daysInMonth; day++)
-            {
-                var isToday = isCurrentMonth && day == today.Day;
-                var cell = isToday
-                    ? $"🔵 {day:00}"
-                    : eventDays.Contains(day) ? $"✅ {day:00}" : $"⬜ {day:00}";
-                currentWeek.Add(cell);
-
-                if (currentWeek.Count == 7)
+            MarkdownCalendarRenderer.AppendCalendarGrid(
+                sections,
+                month.Year,
+                month.Month,
+                day =>
                 {
-                    sections.Add($"| {string.Join(" | ", currentWeek)} |");
-                    currentWeek.Clear();
-                }
-            }
-
-            if (currentWeek.Count > 0)
-            {
-                while (currentWeek.Count < 7)
-                    currentWeek.Add("     ");
-                sections.Add($"| {string.Join(" | ", currentWeek)} |");
-            }
+                    var isToday = isCurrentMonth && day == today.Day;
+                    return isToday
+                        ? $"🔵 {day:00}"
+                        : eventDays.Contains(day) ? $"✅ {day:00}" : $"⬜ {day:00}";
+                });
 
             if (month.Events.Count > 0)
             {

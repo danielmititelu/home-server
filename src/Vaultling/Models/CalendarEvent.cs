@@ -16,7 +16,8 @@ public record CalendarEvent(string Date, string Note)
                     Date: parts[0].Trim(),
                     Note: parts[1].Trim()
                 );
-            });
+            })
+            ;
     }
 
     public CalendarOccurrence ToOccurrence(int year)
