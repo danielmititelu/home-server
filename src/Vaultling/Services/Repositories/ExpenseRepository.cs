@@ -19,7 +19,9 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
 
     public void AppendExpenses(IEnumerable<ExpenseLog> expenses)
     {
-        var lines = expenses.Select(ToCsvLine).ToList();
+        var lines = expenses
+            .Select(expense => $"{expense.Month},{expense.Day},{expense.Category},{expense.Amount},{expense.Description}")
+            .ToList();
         if (lines.Count == 0)
         {
             return;
@@ -30,10 +32,5 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
     public void WriteExpenseReport(IEnumerable<string> markdownLines)
     {
         File.WriteAllLines(_options.ReportFile, markdownLines);
-    }
-
-    internal static string ToCsvLine(ExpenseLog expense)
-    {
-        return $"{expense.Month},{expense.Day},{expense.Category},{expense.Amount},{expense.Description}";
     }
 }

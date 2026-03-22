@@ -30,7 +30,7 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
     public void AppendWorkout(IEnumerable<WorkoutLog> logs)
     {
         var lines = logs
-            .Select(ToCsvLine)
+            .Select(log => $"{log.Month},{log.Day},{log.Type},{log.Reps}")
             .ToList();
 
         if (lines.Count == 0)
@@ -59,10 +59,5 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
     public void WriteWorkoutReport(IEnumerable<string> markdownLines)
     {
         File.WriteAllLines(_options.ReportFile, markdownLines);
-    }
-
-    internal static string ToCsvLine(WorkoutLog log)
-    {
-        return $"{log.Month},{log.Day},{log.Type},{log.Reps}";
     }
 }

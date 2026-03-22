@@ -52,19 +52,25 @@ public class ExpenseRepositoryTests
     }
 
     [Fact]
-    public void ToCsvLine_RoundTrips()
+    public void AppendExpenses_ThenReadExpenses_RoundTrips()
     {
-        var expense = _expenses.First();
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, ["month,day,category,amount,description"]);
 
-        var csv = ExpenseRepository.ToCsvLine(expense);
-        var parts = csv.Split(',');
-        var reparsed = new ExpenseLog(
-            Month: int.Parse(parts[0]),
-            Day: int.Parse(parts[1]),
-            Category: parts[2],
-            Amount: decimal.Parse(parts[3]),
-            Description: parts[4]);
+        try
+        {
+            var repository = new ExpenseRepository(
+                Options.Create(new ExpenseOptions { DataFile = tempFile }));
 
-        Assert.Equal(expense, reparsed);
+            var expense = new ExpenseLog(3, 7, "food", 45.50m, "groceries");
+            repository.AppendExpenses([expense]);
+
+            var reparsed = repository.ReadExpenses().Single();
+            Assert.Equal(expense, reparsed);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
     }
 }

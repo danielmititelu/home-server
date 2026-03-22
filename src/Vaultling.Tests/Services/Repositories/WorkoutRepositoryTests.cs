@@ -51,14 +51,26 @@ public class WorkoutRepositoryTests
     }
 
     [Fact]
-    public void ToCsvLine_RoundTrips()
+    public void AppendWorkout_ThenReadWorkoutLogs_RoundTrips()
     {
-        var log = _logs.First();
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, ["month,day,type,reps"]);
 
-        var csv = WorkoutRepository.ToCsvLine(log);
-        var parts = csv.Split(',');
-        var reparsed = new WorkoutLog(parts[0], parts[1], parts[2], parts[3]);
+        try
+        {
+            var repository = new WorkoutRepository(
+                Options.Create(new WorkoutOptions { LogFile = tempFile }),
+                TimeProvider.System);
 
-        Assert.Equal(log, reparsed);
+            var log = new WorkoutLog("03", "07", "pushups", "20-20-20");
+            repository.AppendWorkout([log]);
+
+            var reparsed = repository.ReadWorkoutLogs().Single();
+            Assert.Equal(log, reparsed);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
     }
 }
