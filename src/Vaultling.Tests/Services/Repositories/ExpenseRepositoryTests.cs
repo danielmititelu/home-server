@@ -1,35 +1,35 @@
-using Vaultling.Models;
+using Vaultling.Services.Repositories;
 
 namespace Vaultling.Tests;
 
-public class ExpenseLogTests
+public class ExpenseRepositoryTests
 {
     private static readonly string TestDataPath = Path.Combine("TestData", "expenses.csv");
 
     [Fact]
-    public void Parse_ReadsAllExpenseRows()
+    public void ParseExpenseLogs_ReadsAllExpenseRows()
     {
         var lines = File.ReadLines(TestDataPath);
-        var expenses = ExpenseLog.Parse(lines).ToList();
+        var expenses = ExpenseRepository.ParseExpenseLogs(lines).ToList();
 
         Assert.Equal(4, expenses.Count);
     }
 
     [Fact]
-    public void Parse_SkipsHeader()
+    public void ParseExpenseLogs_SkipsHeader()
     {
         var lines = File.ReadLines(TestDataPath);
-        var first = ExpenseLog.Parse(lines).First();
+        var first = ExpenseRepository.ParseExpenseLogs(lines).First();
 
         Assert.Equal(1, first.Month);
         Assert.Equal(5, first.Day);
     }
 
     [Fact]
-    public void Parse_ParsesFieldsCorrectly()
+    public void ParseExpenseLogs_ParsesFieldsCorrectly()
     {
         var lines = File.ReadLines(TestDataPath);
-        var expenses = ExpenseLog.Parse(lines).ToList();
+        var expenses = ExpenseRepository.ParseExpenseLogs(lines).ToList();
 
         var first = expenses[0];
         Assert.Equal(1, first.Month);
@@ -50,10 +50,10 @@ public class ExpenseLogTests
     public void ToCsvLine_RoundTrips()
     {
         var lines = File.ReadLines(TestDataPath);
-        var expense = ExpenseLog.Parse(lines).First();
+        var expense = ExpenseRepository.ParseExpenseLogs(lines).First();
 
-        var csv = expense.ToCsvLine();
-        var reparsed = ExpenseLog.Parse(new[] { "header", csv }).Single();
+        var csv = ExpenseRepository.ToCsvLine(expense);
+        var reparsed = ExpenseRepository.ParseExpenseLogs(new[] { "header", csv }).Single();
 
         Assert.Equal(expense, reparsed);
     }

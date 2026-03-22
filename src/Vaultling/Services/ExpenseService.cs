@@ -1,5 +1,7 @@
 namespace Vaultling.Services;
 
+using System.Globalization;
+
 public class ExpenseService(ExpenseRepository expenseRepository)
 {
     public void ProduceExpenseReport()
@@ -24,6 +26,27 @@ public class ExpenseService(ExpenseRepository expenseRepository)
             .ToList();
 
         var report = new ExpenseReport(months);
-        expenseRepository.WriteExpenseReport(report);
+        expenseRepository.WriteExpenseReport(ToMarkdownLines(report));
+    }
+
+    private static IEnumerable<string> ToMarkdownLines(ExpenseReport report)
+    {
+        var sections = new List<string>();
+
+        foreach (var month in report.Months)
+        {
+            var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Month);
+            var categoryLines = string.Join("\n", month.Categories.Select(c => $"- {c.Category}: {c.Amount:0.00} RON"));
+
+            var monthSection = $"""
+                ## {month.Month:00} - {monthName}
+                {categoryLines}
+                - total: {month.Total:0.00} RON
+                """;
+
+            sections.Add(monthSection);
+        }
+
+        return string.Join("\n", sections).Split('\n');
     }
 }
