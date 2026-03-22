@@ -1,5 +1,7 @@
 namespace Vaultling.Services.Repositories;
 
+using System.Globalization;
+
 public class CalendarRepository(IOptions<CalendarOptions> options)
 {
     private readonly CalendarOptions _options = options.Value;
@@ -7,7 +9,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
     public void MaterializeRecurringEvents(int year)
     {
         var recurringFile = _options.EventsFile;
-        var singleFile = _options.SingleEventsFile;
+        var singleFile = ResolveYearPath(_options.SingleEventsFile, year);
 
         if (string.IsNullOrEmpty(recurringFile) || !File.Exists(recurringFile))
             return;
@@ -38,7 +40,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
 
     public IEnumerable<CalendarOccurrence> ReadCalendarOccurrences(int year)
     {
-        var singleFile = _options.SingleEventsFile;
+        var singleFile = ResolveYearPath(_options.SingleEventsFile, year);
         if (string.IsNullOrEmpty(singleFile) || !File.Exists(singleFile))
             return [];
 
@@ -46,9 +48,21 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             .Select(e => e.ToOccurrence(year));
     }
 
-    public void WriteCalendarReport(CalendarReport report)
+    public void WriteCalendarReport(int year, CalendarReport report)
     {
-        File.WriteAllLines(_options.ReportFile, report.ToMarkdownLines());
+        var reportFile = ResolveYearPath(_options.ReportFile, year);
+        if (string.IsNullOrEmpty(reportFile))
+            return;
+
+        File.WriteAllLines(reportFile, report.ToMarkdownLines());
+    }
+
+    private static string ResolveYearPath(string pathTemplate, int year)
+    {
+        if (string.IsNullOrEmpty(pathTemplate))
+            return "";
+
+        return pathTemplate.Replace("{year}", year.ToString(CultureInfo.InvariantCulture));
     }
 
     private static HashSet<string> ReadExistingNotes(string path)
