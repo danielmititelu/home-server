@@ -4,6 +4,7 @@ public class DailyEntryService(
     DailyEntryRepository dailyEntryRepository,
     WorkoutRepository workoutRepository,
     ExpenseRepository expenseRepository,
+    CalendarRepository calendarRepository,
     TimeProvider timeProvider)
 {
     public void ProcessDailyEntry()
@@ -24,11 +25,16 @@ public class DailyEntryService(
         var todayWorkouts = workoutRepository.GetTodayWorkout();
         var carryOverTodos = yesterdayEntry.Todos
             .Where(t => !t.Contains("[x]", StringComparison.OrdinalIgnoreCase));
+        
+        var currentYear = timeProvider.GetLocalNow().Year;
+        var calendarEvents = calendarRepository.ReadCalendarOccurrences(currentYear);
+        
         var newTodayEntry = new DailyEntry(
             Date: timeProvider.GetLocalNow(),
             Workouts: todayWorkouts,
             Todos: carryOverTodos,
-            Expenses: []
+            Expenses: [],
+            CalendarEvents: calendarEvents
         );
         dailyEntryRepository.WriteDailyEntry(newTodayEntry);
     }

@@ -7,14 +7,16 @@ public enum DailySectionName
     Date,
     Workout,
     Todo,
-    Expenses
+    Expenses,
+    Calendar
 }
 
 public record DailyEntry(
     DateTimeOffset Date,
     IEnumerable<DailyWorkout> Workouts,
     IEnumerable<string> Todos,
-    IEnumerable<DailyExpense> Expenses)
+    IEnumerable<DailyExpense> Expenses,
+    IEnumerable<CalendarOccurrence> CalendarEvents = default!)
 {
     public IEnumerable<WorkoutLog> ToWorkoutLogs()
     {
@@ -45,6 +47,18 @@ public record DailyEntry(
     {
         var workoutLines = string.Join("\n", Workouts.Select(w => $"{w.Exercise},{w.Reps}"));
         var todoLines = string.Join("\n", Todos.Select(t => t));
+        var upcomingEvents = CalendarEvents
+            .Where(e => e.Date > Date.DateTime && e.Date <= Date.DateTime.AddDays(14))
+            .OrderBy(e => e.Date);
+        var calendarLines = upcomingEvents.Any()
+            ? string.Join("\n", upcomingEvents.Select(e =>
+            {
+                var timeStr = e.Date.TimeOfDay == TimeSpan.Zero
+                    ? ""
+                    : $" at {e.Date:HH:mm}";
+                return $"- {e.Date:ddd MMM d}{timeStr}: {e.Note}";
+            }))
+            : "";
         
         var markdown = $"""
             # {DailySectionName.Date}
@@ -59,6 +73,9 @@ public record DailyEntry(
 
             # {DailySectionName.Todo}
             {todoLines}
+
+            # {DailySectionName.Calendar}
+            {calendarLines}
             """;
 
         return markdown.Split('\n');
@@ -87,7 +104,7 @@ public record DailyEntry(
         var expenses = ParseDailyExpenses(sectionsContent[DailySectionName.Expenses.ToString()]);
         var todos = sectionsContent[DailySectionName.Todo.ToString()];
 
-        return new DailyEntry(date, workouts, todos, expenses);
+        return new DailyEntry(date, workouts, todos, expenses, []);
     }
 
     private static IEnumerable<DailyWorkout> ParseDailyWorkouts(List<string> csvLines)
