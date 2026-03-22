@@ -18,36 +18,47 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
     public IEnumerable<CalendarOccurrence> ReadCalendarOccurrences(int year)
     {
         var recurringFile = _options.EventsFile;
-        if (string.IsNullOrEmpty(recurringFile) || !File.Exists(recurringFile))
-            return [];
-
-        var recurring = Utils.ParseCsv(File.ReadLines(recurringFile), parts =>
+        var recurringOccurrences =
+            !string.IsNullOrEmpty(recurringFile) && File.Exists(recurringFile)
+            ? Utils.ParseCsv(File.ReadLines(recurringFile), parts =>
         {
             var schedule = parts[0].Trim().ToLowerInvariant();
             var note = parts[1].Trim();
             return ParseRecurringSchedule(schedule, note);
-        }, maxColumnSplit: 2);
-        var from = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var to = new DateTimeOffset(year, 12, 31, 23, 59, 59, TimeSpan.Zero);
+        }, maxColumnSplit: 2)
+                .SelectMany(e => GetOccurrences(
+                    e,
+                    new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(year, 12, 31, 23, 59, 59, TimeSpan.Zero)))
+            : [];
 
-        return recurring.SelectMany(e => GetOccurrences(e, from, to));
+        var singleEventsFile = Utils.ResolveYearPath(_options.SingleEventsFile, year);
+        var singleOccurrences =
+            !string.IsNullOrEmpty(singleEventsFile) && File.Exists(singleEventsFile)
+            ? Utils.ParseCsv(File.ReadLines(singleEventsFile), parts => ParseSingleOccurrence(parts, year), maxColumnSplit: 2)
+            : [];
+
+        return recurringOccurrences.Concat(singleOccurrences);
     }
 
     public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)
     {
-        var reportFile = ResolveYearPath(_options.ReportFile, year);
+        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
         if (string.IsNullOrEmpty(reportFile))
             return;
 
         File.WriteAllLines(reportFile, markdownLines);
     }
 
-    private static string ResolveYearPath(string pathTemplate, int year)
+    private static CalendarOccurrence ParseSingleOccurrence(string[] parts, int year)
     {
-        if (string.IsNullOrEmpty(pathTemplate))
-            return "";
-
-        return pathTemplate.Replace("{year}", year.ToString(CultureInfo.InvariantCulture));
+        var datePart = parts[0].Trim();
+        var note = parts[1].Trim();
+        var date = DateTime.Parse(
+            $"{year}-{datePart}",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None);
+        return new CalendarOccurrence(date, note);
     }
 
     internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)

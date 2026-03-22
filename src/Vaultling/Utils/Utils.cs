@@ -1,5 +1,7 @@
 namespace Vaultling.Utils;
 
+using System.Globalization;
+
 public static class Utils
 {
     public static IEnumerable<T> ParseCsv<T>(
@@ -19,7 +21,15 @@ public static class Utils
             });
     }
 
-      public static void AppendCalendarGrid(
+    public static string ResolveYearPath(string pathTemplate, int year)
+    {
+        if (string.IsNullOrEmpty(pathTemplate))
+            return "";
+
+        return pathTemplate.Replace("{year}", year.ToString(CultureInfo.InvariantCulture));
+    }
+
+    public static void AppendCalendarGrid(
         List<string> sections,
         int year,
         int month,

@@ -6,13 +6,49 @@ namespace Vaultling.Tests;
 
 public class CalendarRepositoryTests
 {
-    private static CalendarRepository MakeRepository(string eventsFile)
+    private static CalendarRepository MakeRepository(string eventsFile, string singleEventsFile = "")
     {
         return new CalendarRepository(Options.Create(new CalendarOptions
         {
             EventsFile = eventsFile,
+            SingleEventsFile = singleEventsFile,
             ReportFile = ""
         }));
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_IncludesSingleEventsFileWithYearPlaceholder()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var recurringFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(recurringFile, ["schedule,note"]);
+
+            var singleEventsTemplate = Path.Combine(tempDir, "{year}-events-csv.md");
+            var singleEvents2026 = Path.Combine(tempDir, "2026-events-csv.md");
+            File.WriteAllLines(singleEvents2026, [
+                "date,note",
+                "03-15T10:00,Doctor appointment"
+            ]);
+
+            var occurrences = MakeRepository(recurringFile, singleEventsTemplate)
+                .ReadCalendarOccurrences(2026)
+                .ToList();
+
+            var only = Assert.Single(occurrences);
+            Assert.Equal(new DateTime(2026, 3, 15, 10, 0, 0), only.Date);
+            Assert.Equal("Doctor appointment", only.Note);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
     }
 
     [Fact]
