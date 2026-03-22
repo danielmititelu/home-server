@@ -7,13 +7,15 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
         var currentYear = timeProvider.GetLocalNow().Year;
         var occurrences = calendarRepository.ReadCalendarOccurrences(currentYear).ToList();
 
-        var months = occurrences
+        var eventsByMonth = occurrences
             .GroupBy(o => o.Date.Month)
-            .OrderBy(g => g.Key)
-            .Select(monthGroup => new MonthlyCalendarSummary(
-                Month: monthGroup.Key,
+            .ToDictionary(g => g.Key, g => g.OrderBy(e => e.Date).ToList());
+
+        var months = Enumerable.Range(1, 12)
+            .Select(m => new MonthlyCalendarSummary(
+                Month: m,
                 Year: currentYear,
-                Events: monthGroup.OrderBy(e => e.Date).ToList()
+                Events: eventsByMonth.GetValueOrDefault(m, [])
             ))
             .ToList();
 
