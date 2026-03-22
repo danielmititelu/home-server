@@ -1,5 +1,7 @@
 namespace Vaultling.Services.Repositories;
 
+using Vaultling.Utils;
+
 public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
 {
     private readonly DailyEntryOptions _options = options.Value;
@@ -56,32 +58,18 @@ public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
 
     private static IEnumerable<DailyWorkout> ParseDailyWorkouts(List<string> csvLines)
     {
-        return csvLines
-            .Skip(1)
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line =>
-            {
-                var parts = line.Split(',');
-                return new DailyWorkout(
-                    Exercise: parts[0],
-                    Reps: parts.Length > 1 ? parts[1] : ""
-                );
-            });
+        return Utils.ParseCsv(csvLines, parts => new DailyWorkout(
+            Exercise: parts[0],
+            Reps: parts.Length > 1 ? parts[1] : ""
+        ));
     }
 
     private static IEnumerable<DailyExpense> ParseDailyExpenses(List<string> csvLines)
     {
-        return csvLines
-            .Skip(1)
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line =>
-            {
-                var parts = line.Split(',');
-                return new DailyExpense(
-                    Category: parts[0],
-                    Amount: parts.Length > 1 && decimal.TryParse(parts[1], out var amt) ? amt : 0,
-                    Description: parts.Length > 2 ? parts[2] : ""
-                );
-            });
+        return Utils.ParseCsv(csvLines, parts => new DailyExpense(
+            Category: parts[0],
+            Amount: parts.Length > 1 && decimal.TryParse(parts[1], out var amt) ? amt : 0,
+            Description: parts.Length > 2 ? parts[2] : ""
+        ));
     }
 }

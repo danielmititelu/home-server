@@ -48,7 +48,7 @@ public class WorkoutService(WorkoutRepository workoutRepository, TimeProvider ti
             sections.Add($"**Total Days: {totalDays}**");
             sections.Add("");
 
-            MarkdownCalendarRenderer.AppendCalendarGrid(
+            Utils.AppendCalendarGrid(
                 sections,
                 month.Year,
                 month.Month,

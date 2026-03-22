@@ -1,6 +1,7 @@
 namespace Vaultling.Services.Repositories;
 
 using System.Globalization;
+using Vaultling.Utils;
 
 public class CalendarRepository(IOptions<CalendarOptions> options)
 {
@@ -46,16 +47,12 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
 
     internal static IEnumerable<RecurringEvent> ParseRecurringEvents(IEnumerable<string> csvLines)
     {
-        return csvLines
-            .Skip(1)
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line =>
-            {
-                var parts = line.Split(',', 2);
-                var schedule = parts[0].Trim().ToLowerInvariant();
-                var note = parts[1].Trim();
-                return ParseRecurringSchedule(schedule, note);
-            });
+        return Utils.ParseCsv(csvLines, parts =>
+        {
+            var schedule = parts[0].Trim().ToLowerInvariant();
+            var note = parts[1].Trim();
+            return ParseRecurringSchedule(schedule, note);
+        }, maxColumnSplit: 2);
     }
 
     internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)

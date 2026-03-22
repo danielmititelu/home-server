@@ -1,8 +1,25 @@
 namespace Vaultling.Utils;
 
-public static class MarkdownCalendarRenderer
+public static class Utils
 {
-    public static void AppendCalendarGrid(
+    public static IEnumerable<T> ParseCsv<T>(
+        IEnumerable<string> csvLines,
+        Func<string[], T> mapper,
+        int maxColumnSplit = -1)
+    {
+        return csvLines
+            .Skip(1) // Skip header
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line =>
+            {
+                var parts = maxColumnSplit > 0
+                    ? line.Split(',', maxColumnSplit)
+                    : line.Split(',');
+                return mapper(parts);
+            });
+    }
+
+      public static void AppendCalendarGrid(
         List<string> sections,
         int year,
         int month,

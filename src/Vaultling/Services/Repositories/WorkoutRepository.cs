@@ -1,5 +1,7 @@
 namespace Vaultling.Services.Repositories;
 
+using Vaultling.Utils;
+
 public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider timeProvider)
 {
     private readonly WorkoutOptions _options = options.Value;
@@ -62,18 +64,11 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
 
     internal static IEnumerable<WorkoutLog> ParseWorkoutLogs(IEnumerable<string> csvLines)
     {
-        return csvLines
-            .Skip(1)
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line =>
-            {
-                var parts = line.Split(',');
-                return new WorkoutLog(
-                    Month: parts[0],
-                    Day: parts[1],
-                    Type: parts[2],
-                    Reps: parts[3]
-                );
-            });
+        return Utils.ParseCsv(csvLines, parts => new WorkoutLog(
+            Month: parts[0],
+            Day: parts[1],
+            Type: parts[2],
+            Reps: parts[3]
+        ));
     }
 }

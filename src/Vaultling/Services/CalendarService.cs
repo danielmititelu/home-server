@@ -44,7 +44,7 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
 
             var eventDays = month.Events.Select(e => e.Date.Day).ToHashSet();
 
-            MarkdownCalendarRenderer.AppendCalendarGrid(
+            Utils.AppendCalendarGrid(
                 sections,
                 month.Year,
                 month.Month,
