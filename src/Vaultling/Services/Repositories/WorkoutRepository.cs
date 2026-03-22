@@ -27,11 +27,15 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
 
     public void AppendWorkout(IEnumerable<WorkoutLog> logs)
     {
-        var lines = logs.Select(l => l.ToCsvLine()).ToList();
+        var lines = logs
+            .Select(ToCsvLine)
+            .ToList();
+
         if (lines.Count == 0)
         {
             return;
         }
+
         File.AppendAllLines(_options.LogFile, lines);
     }
 
@@ -43,11 +47,33 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
         }
 
         var lines = File.ReadLines(_options.LogFile);
-        return WorkoutLog.Parse(lines);
+        return ParseWorkoutLogs(lines);
     }
 
-    public void WriteWorkoutReport(WorkoutReport report)
+    public void WriteWorkoutReport(IEnumerable<string> markdownLines)
     {
-        File.WriteAllLines(_options.ReportFile, report.ToMarkdownLines());
+        File.WriteAllLines(_options.ReportFile, markdownLines);
+    }
+
+    public static string ToCsvLine(WorkoutLog log)
+    {
+        return $"{log.Month},{log.Day},{log.Type},{log.Reps}";
+    }
+
+    public static IEnumerable<WorkoutLog> ParseWorkoutLogs(IEnumerable<string> csvLines)
+    {
+        return csvLines
+            .Skip(1)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line =>
+            {
+                var parts = line.Split(',');
+                return new WorkoutLog(
+                    Month: parts[0],
+                    Day: parts[1],
+                    Type: parts[2],
+                    Reps: parts[3]
+                );
+            });
     }
 }

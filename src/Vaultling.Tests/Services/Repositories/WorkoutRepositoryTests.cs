@@ -1,35 +1,35 @@
-using Vaultling.Models;
+using Vaultling.Services.Repositories;
 
 namespace Vaultling.Tests;
 
-public class WorkoutLogTests
+public class WorkoutRepositoryTests
 {
     private static readonly string TestDataPath = Path.Combine("TestData", "workouts.csv");
 
     [Fact]
-    public void Parse_ReadsAllWorkoutRows()
+    public void ParseWorkoutLogs_ReadsAllWorkoutRows()
     {
         var lines = File.ReadLines(TestDataPath);
-        var logs = WorkoutLog.Parse(lines).ToList();
+        var logs = WorkoutRepository.ParseWorkoutLogs(lines).ToList();
 
         Assert.Equal(3, logs.Count);
     }
 
     [Fact]
-    public void Parse_SkipsHeader()
+    public void ParseWorkoutLogs_SkipsHeader()
     {
         var lines = File.ReadLines(TestDataPath);
-        var first = WorkoutLog.Parse(lines).First();
+        var first = WorkoutRepository.ParseWorkoutLogs(lines).First();
 
         Assert.Equal("01", first.Month);
         Assert.Equal("05", first.Day);
     }
 
     [Fact]
-    public void Parse_ParsesFieldsCorrectly()
+    public void ParseWorkoutLogs_ParsesFieldsCorrectly()
     {
         var lines = File.ReadLines(TestDataPath);
-        var logs = WorkoutLog.Parse(lines).ToList();
+        var logs = WorkoutRepository.ParseWorkoutLogs(lines).ToList();
 
         var first = logs[0];
         Assert.Equal("01", first.Month);
@@ -48,10 +48,10 @@ public class WorkoutLogTests
     public void ToCsvLine_RoundTrips()
     {
         var lines = File.ReadLines(TestDataPath);
-        var log = WorkoutLog.Parse(lines).First();
+        var log = WorkoutRepository.ParseWorkoutLogs(lines).First();
 
-        var csv = log.ToCsvLine();
-        var reparsed = WorkoutLog.Parse(new[] { "header", csv }).Single();
+        var csv = WorkoutRepository.ToCsvLine(log);
+        var reparsed = WorkoutRepository.ParseWorkoutLogs(new[] { "header", csv }).Single();
 
         Assert.Equal(log, reparsed);
     }

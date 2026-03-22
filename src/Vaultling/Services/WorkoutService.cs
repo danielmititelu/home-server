@@ -1,5 +1,8 @@
 namespace Vaultling.Services;
 
+using System.Globalization;
+using Vaultling.Utils;
+
 public class WorkoutService(WorkoutRepository workoutRepository, TimeProvider timeProvider)
 {
     public void ProduceWorkoutReport()
@@ -28,7 +31,36 @@ public class WorkoutService(WorkoutRepository workoutRepository, TimeProvider ti
             })
             .ToList();
 
-        var report = new WorkoutReport(months);
-        workoutRepository.WriteWorkoutReport(report);
+        workoutRepository.WriteWorkoutReport(GenerateMarkdownWorkoutReport(months));
+    }
+
+    private static List<string> GenerateMarkdownWorkoutReport(List<MonthlyWorkoutSummary> months)
+    {
+        var sections = new List<string> {};
+
+        foreach (var month in months)
+        {
+            var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Month);
+            sections.Add($"## {month.Month:00} - {monthName}");
+            sections.Add("");
+
+            var totalDays = month.DayWorkoutCounts.Count;
+            sections.Add($"**Total Days: {totalDays}**");
+            sections.Add("");
+
+            MarkdownCalendarRenderer.AppendCalendarGrid(
+                sections,
+                month.Year,
+                month.Month,
+                day =>
+                {
+                    var count = month.DayWorkoutCounts.GetValueOrDefault(day, 0);
+                    return count > 0 ? $"✅ {day:00}" : $"⬜ {day:00}";
+                });
+
+            sections.Add("");
+        }
+
+        return sections;
     }
 }
