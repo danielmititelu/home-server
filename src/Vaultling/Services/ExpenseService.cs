@@ -26,10 +26,10 @@ public class ExpenseService(ExpenseRepository expenseRepository)
             .ToList();
 
         var report = new ExpenseReport(months);
-        expenseRepository.WriteExpenseReport(ToMarkdownLines(report));
+        expenseRepository.WriteExpenseReport(GenerateExpenseMarkdownReport(report));
     }
 
-    private static IEnumerable<string> ToMarkdownLines(ExpenseReport report)
+    private static string[] GenerateExpenseMarkdownReport(ExpenseReport report)
     {
         var sections = new List<string>();
 

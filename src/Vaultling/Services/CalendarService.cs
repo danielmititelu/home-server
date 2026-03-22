@@ -26,11 +26,11 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
                 .ToList();
 
             var report = new CalendarReport(months);
-            calendarRepository.WriteCalendarReport(year, ToMarkdownLines(report));
+            calendarRepository.WriteCalendarReport(year, GenerateMarkdownForCalendarReport(report));
         }
     }
 
-    private static IEnumerable<string> ToMarkdownLines(CalendarReport report)
+    private static List<string> GenerateMarkdownForCalendarReport(CalendarReport report)
     {
         var sections = new List<string>();
         var today = DateTime.Today;
