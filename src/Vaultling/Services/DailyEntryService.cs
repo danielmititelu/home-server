@@ -68,6 +68,7 @@ public class DailyEntryService(
     {
         var workoutLines = string.Join("\n", dailyEntry.Workouts.Select(w => $"{w.Exercise},{w.Reps}"));
         var todoLines = string.Join("\n", dailyEntry.Todos.Select(t => t));
+        var today = dailyEntry.Date.Date;
         var upcomingEvents = dailyEntry.CalendarEvents
             .Where(e => e.Date > dailyEntry.Date.DateTime && e.Date <= dailyEntry.Date.DateTime.AddDays(14))
             .OrderBy(e => e.Date);
@@ -77,13 +78,17 @@ public class DailyEntryService(
                 var timeStr = e.Date.TimeOfDay == TimeSpan.Zero
                     ? ""
                     : $" at {e.Date:HH:mm}";
-                return $"- {e.Date:ddd MMM d}{timeStr}: {e.Note}";
+                var dateLabel = GetRelativeDateLabel(e.Date, today);
+                return $"- {dateLabel}{timeStr}: {e.Note}";
             }))
             : "";
 
         var markdown = $"""
             # {DailySectionName.Date}
             {dailyEntry.Date.ToIsoDateString()}
+
+            # {DailySectionName.Calendar}
+            {calendarLines}
 
             # {DailySectionName.Workout}
             exercise,reps
@@ -94,11 +99,21 @@ public class DailyEntryService(
 
             # {DailySectionName.Todo}
             {todoLines}
-
-            # {DailySectionName.Calendar}
-            {calendarLines}
             """;
 
         return markdown.Split('\n');
+    }
+
+    private static string GetRelativeDateLabel(DateTime eventDate, DateTime today)
+    {
+        var dayOffset = (eventDate.Date - today.Date).Days;
+
+        return dayOffset switch
+        {
+            0 => "Today",
+            1 => "Tomorrow",
+            < 7 => eventDate.ToString("dddd"),
+            _ => $"Next {eventDate:dddd}"
+        };
     }
 }

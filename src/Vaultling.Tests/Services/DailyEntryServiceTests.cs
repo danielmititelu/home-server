@@ -61,4 +61,29 @@ public class DailyEntryServiceTests
         Assert.Equal(original.Workouts.Count(), reparsed.Workouts.Count());
         Assert.Equal(original.Todos.Count(), reparsed.Todos.Count());
     }
+
+    [Fact]
+    public void GenerateMarkdownForDailyEntry_UsesRelativeCalendarLabels()
+    {
+        var entryDate = new DateTimeOffset(2026, 3, 26, 9, 0, 0, TimeSpan.Zero);
+        var entry = new DailyEntry(
+            Date: entryDate,
+            Workouts: [],
+            Todos: [],
+            Expenses: [],
+            CalendarEvents:
+            [
+                new CalendarOccurrence(new DateTime(2026, 3, 26, 18, 0, 0), "Piano lesson"),
+                new CalendarOccurrence(new DateTime(2026, 3, 27, 20, 0, 0), "Movie night"),
+                new CalendarOccurrence(new DateTime(2026, 3, 28, 0, 0, 0), "Picnic"),
+                new CalendarOccurrence(new DateTime(2026, 4, 2, 18, 0, 0), "Piano lesson")
+            ]);
+
+        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry));
+
+        Assert.Contains("- Today at 18:00: Piano lesson", markdown);
+        Assert.Contains("- Tomorrow at 20:00: Movie night", markdown);
+        Assert.Contains("- Saturday: Picnic", markdown);
+        Assert.Contains("- Next Thursday at 18:00: Piano lesson", markdown);
+    }
 }
