@@ -68,7 +68,10 @@ public class DailyEntryService(
     public static IEnumerable<string> GenerateMarkdownForDailyEntry(DailyEntry dailyEntry)
     {
         var workoutLines = string.Join("\n", dailyEntry.Workouts.Select(w => $"{w.Exercise},{w.Reps}"));
-        var todoLines = string.Join("\n", dailyEntry.Todos.Select(t => t));
+        var todoItems = dailyEntry.Todos.ToList();
+        var todoLines = todoItems.Count > 0
+            ? string.Join("\n", todoItems)
+            : "- [ ]";
         var today = dailyEntry.Date.Date;
         var calendarReportLink = Utils.GetCalendarReportMonthLink(dailyEntry.Date.DateTime);
         var upcomingEvents = dailyEntry.CalendarEvents

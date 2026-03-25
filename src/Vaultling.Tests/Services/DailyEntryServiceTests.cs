@@ -80,11 +80,28 @@ public class DailyEntryServiceTests
             ]);
 
         var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry));
+        var expectedCalendarLink = Vaultling.Utils.Utils.GetCalendarReportMonthLink(entryDate.DateTime);
 
-        Assert.Contains("[[2026-calendar-report#03 - March]]", markdown);
+        Assert.Contains(expectedCalendarLink, markdown);
         Assert.Contains("- Azi la 18:00: Piano lesson", markdown);
         Assert.Contains("- Mâine la 20:00: Movie night", markdown);
         Assert.Contains("- Sâmbătă: Picnic", markdown);
         Assert.Contains("- Joia următoare la 18:00: Piano lesson", markdown);
+    }
+
+    [Fact]
+    public void GenerateMarkdownForDailyEntry_AddsDefaultTodo_WhenTodosAreEmpty()
+    {
+        var entry = new DailyEntry(
+            Date: new DateTimeOffset(2026, 3, 26, 9, 0, 0, TimeSpan.Zero),
+            Workouts: [],
+            Todos: [],
+            Expenses: [],
+            CalendarEvents: []);
+
+        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry));
+
+        Assert.Contains("# Todo", markdown);
+        Assert.Contains("- [ ]", markdown);
     }
 }
