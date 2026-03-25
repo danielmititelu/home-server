@@ -1,6 +1,4 @@
 namespace Vaultling.Services;
-
-using System.Globalization;
 using Vaultling.Utils;
 
 public class CalendarService(CalendarRepository calendarRepository, TimeProvider timeProvider)
@@ -37,9 +35,9 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
 
         foreach (var month in report.Months)
         {
-            var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Month);
             var isCurrentMonth = month.Year == today.Year && month.Month == today.Month;
-            sections.Add($"## {month.Month:00} - {monthName}{(isCurrentMonth ? " ⭐" : "")}");
+            var monthAnchor = Utils.GetCalendarReportMonthAnchor(month.Year, month.Month);
+            sections.Add($"## {monthAnchor}{(isCurrentMonth ? " ⭐" : "")}");
             sections.Add("");
 
             var eventDays = month.Events.Select(e => e.Date.Day).ToHashSet();

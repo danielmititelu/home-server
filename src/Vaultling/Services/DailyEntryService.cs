@@ -70,6 +70,7 @@ public class DailyEntryService(
         var workoutLines = string.Join("\n", dailyEntry.Workouts.Select(w => $"{w.Exercise},{w.Reps}"));
         var todoLines = string.Join("\n", dailyEntry.Todos.Select(t => t));
         var today = dailyEntry.Date.Date;
+        var calendarReportLink = Utils.GetCalendarReportMonthLink(dailyEntry.Date.DateTime);
         var upcomingEvents = dailyEntry.CalendarEvents
             .Where(e => e.Date > dailyEntry.Date.DateTime && e.Date <= dailyEntry.Date.DateTime.AddDays(14))
             .OrderBy(e => e.Date);
@@ -87,6 +88,7 @@ public class DailyEntryService(
 
             # {DailySectionName.Calendar}
             {calendarLines}
+            - {calendarReportLink}
 
             # {DailySectionName.Workout}
             exercise,reps

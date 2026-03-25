@@ -81,6 +81,7 @@ public class DailyEntryServiceTests
 
         var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry));
 
+        Assert.Contains("[[2026-calendar-report#03 - March]]", markdown);
         Assert.Contains("- Azi la 18:00: Piano lesson", markdown);
         Assert.Contains("- Mâine la 20:00: Movie night", markdown);
         Assert.Contains("- Sâmbătă: Picnic", markdown);

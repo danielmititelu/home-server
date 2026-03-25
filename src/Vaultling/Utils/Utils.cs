@@ -54,6 +54,18 @@ public static class Utils
         return $"{dateLabel}{timeLabel}";
     }
 
+    public static string GetCalendarReportMonthAnchor(int year, int month)
+    {
+        var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month);
+        return $"{month:00} - {monthName}";
+    }
+
+    public static string GetCalendarReportMonthLink(DateTime date)
+    {
+        var anchor = GetCalendarReportMonthAnchor(date.Year, date.Month);
+        return $"[[{date.Year}-calendar-report#{anchor}| toate evenimentele]]";
+    }
+
     private static string CapitalizeFirst(string s) =>
         string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s[1..];
 
