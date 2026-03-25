@@ -6,18 +6,17 @@ namespace Vaultling.Tests;
 
 public class CalendarRepositoryTests
 {
-    private static CalendarRepository MakeRepository(string eventsFile, string singleEventsFile = "")
+    private static CalendarRepository MakeRepository(string eventsFile, string reportFile = "")
     {
         return new CalendarRepository(Options.Create(new CalendarOptions
         {
             EventsFile = eventsFile,
-            SingleEventsFile = singleEventsFile,
-            ReportFile = ""
+            ReportFile = reportFile
         }));
     }
 
     [Fact]
-    public void ReadCalendarOccurrences_IncludesSingleEventsFileWithYearPlaceholder()
+    public void ReadCalendarOccurrences_IncludesUserAddedEventsFromReport()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
@@ -27,21 +26,21 @@ public class CalendarRepositoryTests
             var recurringFile = Path.Combine(tempDir, "events-csv.md");
             File.WriteAllLines(recurringFile, ["schedule,note"]);
 
-            var singleEventsTemplate = Path.Combine(tempDir, "{year}-events-csv.md");
-            var singleEvents2026 = Path.Combine(tempDir, "2026-events-csv.md");
-            File.WriteAllLines(singleEvents2026, [
-                "date,note,cancelled",
-                "03-15T10:00,Doctor appointment,true"
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 03 - March",
+                "",
+                "- 15 at 10:00: Doctor appointment"
             ]);
 
-            var occurrences = MakeRepository(recurringFile, singleEventsTemplate)
+            var occurrences = MakeRepository(recurringFile, Path.Combine(tempDir, "{year}-calendar-report.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
             var only = Assert.Single(occurrences);
             Assert.Equal(new DateTime(2026, 3, 15, 10, 0, 0), only.Date);
             Assert.Equal("Doctor appointment", only.Note);
-            Assert.True(only.Cancelled);
+            Assert.False(only.Cancelled);
         }
         finally
         {
@@ -139,7 +138,7 @@ public class CalendarRepositoryTests
     }
 
     [Fact]
-    public void ReadCalendarOccurrences_CancelledSingleEvent_OverridesRecurringAndAllowsReschedule()
+    public void ReadCalendarOccurrences_CancelledReportEvent_OverridesRecurringAndAllowsReschedule()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
@@ -152,15 +151,15 @@ public class CalendarRepositoryTests
                 "thursday at 18:00,Piano lesson"
             ]);
 
-            var singleEventsTemplate = Path.Combine(tempDir, "{year}-events-csv.md");
-            var singleEvents2026 = Path.Combine(tempDir, "2026-events-csv.md");
-            File.WriteAllLines(singleEvents2026, [
-                "date,note,cancelled",
-                "01-01T18:00,Piano lesson,true",
-                "01-03T18:00,Piano lesson,false"
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 01 - January",
+                "",
+                "- ~~01 at 18:00: Piano lesson~~",
+                "- 03 at 18:00: Piano lesson"
             ]);
 
-            var occurrences = MakeRepository(recurringFile, singleEventsTemplate)
+            var occurrences = MakeRepository(recurringFile, Path.Combine(tempDir, "{year}-calendar-report.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -225,7 +224,7 @@ public class CalendarRepositoryTests
     }
 
     [Fact]
-    public void ReadCalendarOccurrences_CycleNumbering_CancelledConsumesSlot()
+    public void ReadCalendarOccurrences_CycleNumbering_CancelledInReportConsumesSlot()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
@@ -238,14 +237,16 @@ public class CalendarRepositoryTests
                 "thursday at 18:00,Piano lesson,2026-01-01,4"
             ]);
 
-            var singleEventsTemplate = Path.Combine(tempDir, "{year}-events-csv.md");
-            var singleEvents2026 = Path.Combine(tempDir, "2026-events-csv.md");
-            File.WriteAllLines(singleEvents2026, [
-                "date,note,cancelled",
-                "01-08T18:00,Piano lesson,true"
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 01 - January",
+                "",
+                "- 01 at 18:00: Piano lesson 1/4",
+                "- ~~08 at 18:00: Piano lesson 2/4~~",
+                "- 15 at 18:00: Piano lesson 3/4"
             ]);
 
-            var occurrences = MakeRepository(recurringFile, singleEventsTemplate)
+            var occurrences = MakeRepository(recurringFile, Path.Combine(tempDir, "{year}-calendar-report.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -254,7 +255,7 @@ public class CalendarRepositoryTests
             Assert.Equal("Piano lesson 1/4", jan1.Note);
             Assert.False(jan1.Cancelled);
 
-            // Jan 8 → 2/4 but cancelled
+            // Jan 8 → 2/4 but cancelled via strikethrough in report
             var jan8 = occurrences.Single(o => o.Date == new DateTime(2026, 1, 8, 18, 0, 0));
             Assert.Equal("Piano lesson 2/4", jan8.Note);
             Assert.True(jan8.Cancelled);

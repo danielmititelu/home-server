@@ -37,15 +37,72 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
                     new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     new DateTimeOffset(year, 12, 31, 23, 59, 59, TimeSpan.Zero)));
 
-        var singleEventsFile = Utils.ResolveYearPath(_options.SingleEventsFile, year);
-        var singleOccurrences =
-            !string.IsNullOrEmpty(singleEventsFile) && File.Exists(singleEventsFile)
-            ? Utils.ParseCsv(File.ReadLines(singleEventsFile), parts => ParseSingleOccurrence(parts, year), maxColumnSplit: 3)
-            : [];
+        var numberedOccurrences = ApplyCycleNumbering(recurringOccurrences, recurringEvents);
+        var reportOccurrences = ReadReportOccurrences(year);
 
-        var merged = MergeRecurringAndSingleOccurrences(recurringOccurrences, singleOccurrences);
-        return ApplyCycleNumbering(merged, recurringEvents)
+        return MergeOccurrences(numberedOccurrences, reportOccurrences)
             .OrderBy(o => o.Date);
+    }
+
+    internal IEnumerable<CalendarOccurrence> ReadReportOccurrences(int year)
+    {
+        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
+        if (string.IsNullOrEmpty(reportFile) || !File.Exists(reportFile))
+            return [];
+
+        var result = new List<CalendarOccurrence>();
+        var currentMonth = 0;
+
+        foreach (var line in File.ReadLines(reportFile))
+        {
+            if (line.StartsWith("## ", StringComparison.Ordinal) && line.Length >= 5
+                && int.TryParse(line[3..5], out var m))
+            {
+                currentMonth = m;
+            }
+            else if (line.StartsWith("- ", StringComparison.Ordinal) && currentMonth > 0)
+            {
+                var occurrence = ParseReportEventLine(line, year, currentMonth);
+                if (occurrence != null)
+                    result.Add(occurrence);
+            }
+        }
+
+        return result;
+    }
+
+    internal static CalendarOccurrence? ParseReportEventLine(string line, int year, int month)
+    {
+        var content = line[2..].Trim();
+        var cancelled = content.StartsWith("~~", StringComparison.Ordinal)
+                     && content.EndsWith("~~", StringComparison.Ordinal);
+        if (cancelled)
+            content = content[2..^2];
+
+        // Event lines start with a day number: "DD[ at HH:MM]: Note"
+        if (content.Length < 3 || !char.IsDigit(content[0]))
+            return null;
+
+        var colonIndex = content.IndexOf(": ", StringComparison.Ordinal);
+        if (colonIndex < 0)
+            return null;
+
+        var datePart = content[..colonIndex];
+        var note = content[(colonIndex + 2)..];
+
+        var day = int.Parse(datePart[..2]);
+        var hour = 0;
+        var minute = 0;
+
+        var atIndex = datePart.IndexOf(" at ", StringComparison.Ordinal);
+        if (atIndex >= 0)
+        {
+            var timeParts = datePart[(atIndex + 4)..].Split(':');
+            hour = int.Parse(timeParts[0]);
+            minute = int.Parse(timeParts[1]);
+        }
+
+        return new CalendarOccurrence(new DateTime(year, month, day, hour, minute, 0), note, cancelled);
     }
 
     public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)
@@ -55,18 +112,6 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             return;
 
         File.WriteAllLines(reportFile, markdownLines);
-    }
-
-    private static CalendarOccurrence ParseSingleOccurrence(string[] parts, int year)
-    {
-        var datePart = parts[0].Trim();
-        var note = parts[1].Trim();
-        var cancelled = parts.Length > 2 && bool.TryParse(parts[2].Trim(), out var parsed) && parsed;
-        var date = DateTime.Parse(
-            $"{year}-{datePart}",
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.None);
-        return new CalendarOccurrence(date, note, cancelled);
     }
 
     internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
@@ -166,14 +211,15 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         }
     }
 
-    private static IEnumerable<CalendarOccurrence> MergeRecurringAndSingleOccurrences(
+    private static IEnumerable<CalendarOccurrence> MergeOccurrences(
         IEnumerable<CalendarOccurrence> recurringOccurrences,
-        IEnumerable<CalendarOccurrence> singleOccurrences)
+        IEnumerable<CalendarOccurrence> reportOccurrences)
     {
-        // Single events are explicit overrides for the same date+note recurring entry.
-        // This supports cases like "cancel recurring Thursday" + "add rescheduled Saturday".
+        // Report events override recurring events with the same date+note.
+        // Strikethrough entries in the report cancel the matching recurring event.
+        // Non-matching report events are user-added single events.
         return recurringOccurrences
-            .Concat(singleOccurrences)
+            .Concat(reportOccurrences)
             .GroupBy(o => new
             {
                 o.Date,
