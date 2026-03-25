@@ -1,4 +1,5 @@
 namespace Vaultling.Services;
+using Utils;
 
 public class DailyEntryService(
     DailyEntryRepository dailyEntryRepository,
@@ -75,11 +76,8 @@ public class DailyEntryService(
         var calendarLines = upcomingEvents.Any()
             ? string.Join("\n", upcomingEvents.Select(e =>
             {
-                var timeStr = e.Date.TimeOfDay == TimeSpan.Zero
-                    ? ""
-                    : $" at {e.Date:HH:mm}";
-                var dateLabel = GetRelativeDateLabel(e.Date, today);
-                return $"- {dateLabel}{timeStr}: {e.Note}";
+                var dateTimeLabel = Utils.GetRelativeDateTimeLabel(e.Date, today);
+                return $"- {dateTimeLabel}: {e.Note}";
             }))
             : "";
 
@@ -102,18 +100,5 @@ public class DailyEntryService(
             """;
 
         return markdown.Split('\n');
-    }
-
-    private static string GetRelativeDateLabel(DateTime eventDate, DateTime today)
-    {
-        var dayOffset = (eventDate.Date - today.Date).Days;
-
-        return dayOffset switch
-        {
-            0 => "Today",
-            1 => "Tomorrow",
-            < 7 => eventDate.ToString("dddd"),
-            _ => $"Next {eventDate:dddd}"
-        };
     }
 }
