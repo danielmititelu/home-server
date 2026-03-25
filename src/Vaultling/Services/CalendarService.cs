@@ -37,7 +37,7 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
         {
             var isCurrentMonth = month.Year == today.Year && month.Month == today.Month;
             var monthAnchor = Utils.GetCalendarReportMonthAnchor(month.Year, month.Month);
-            sections.Add($"## {monthAnchor}{(isCurrentMonth ? " ⭐" : "")}");
+            sections.Add($"## {monthAnchor}{(isCurrentMonth ? " 🔵" : "")}");
             sections.Add("");
 
             var eventDays = month.Events.Select(e => e.Date.Day).ToHashSet();
@@ -51,7 +51,7 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
                     var isToday = isCurrentMonth && day == today.Day;
                     return isToday
                         ? $"🔵 {day:00}"
-                        : eventDays.Contains(day) ? $"✅ {day:00}" : $"⬜ {day:00}";
+                        : eventDays.Contains(day) ? $"📅 {day:00}" : $"⬜ {day:00}";
                 });
 
             if (month.Events.Count > 0)
