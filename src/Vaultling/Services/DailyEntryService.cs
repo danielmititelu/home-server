@@ -18,8 +18,23 @@ public class DailyEntryService(
             return;
         }
 
-        workoutRepository.AppendWorkout(ToWorkoutLogs(yesterdayEntry));
-        expenseRepository.AppendExpenses(ToExpenseLogs(yesterdayEntry));
+        workoutRepository.AppendWorkout(yesterdayEntry.Workouts
+            .Where(w => !string.IsNullOrWhiteSpace(w.Reps))
+            .Select(w => new WorkoutLog(
+                Month: yesterdayEntry.Date.Month.ToString("00"),
+                Day: yesterdayEntry.Date.Day.ToString("00"),
+                Type: w.Exercise,
+                Reps: w.Reps
+            )));
+        expenseRepository.AppendExpenses(yesterdayEntry.Expenses
+            .Where(e => e.Amount > 0)
+            .Select(e => new ExpenseLog(
+                Month: yesterdayEntry.Date.Month,
+                Day: yesterdayEntry.Date.Day,
+                Category: e.Category,
+                Amount: e.Amount,
+                Description: e.Description
+            )));
 
         dailyEntryRepository.ArchiveDailyFile(yesterdayEntry.Date);
 
@@ -38,31 +53,6 @@ public class DailyEntryService(
             CalendarEvents: calendarEvents
         );
         dailyEntryRepository.WriteDailyEntry(GenerateMarkdownForDailyEntry(newTodayEntry));
-    }
-
-    public static IEnumerable<WorkoutLog> ToWorkoutLogs(DailyEntry dailyEntry)
-    {
-        return dailyEntry.Workouts
-            .Where(w => !string.IsNullOrWhiteSpace(w.Reps))
-            .Select(w => new WorkoutLog(
-                Month: dailyEntry.Date.Month.ToString("00"),
-                Day: dailyEntry.Date.Day.ToString("00"),
-                Type: w.Exercise,
-                Reps: w.Reps
-            ));
-    }
-
-    public static IEnumerable<ExpenseLog> ToExpenseLogs(DailyEntry dailyEntry)
-    {
-        return dailyEntry.Expenses
-            .Where(e => e.Amount > 0)
-            .Select(e => new ExpenseLog(
-                Month: dailyEntry.Date.Month,
-                Day: dailyEntry.Date.Day,
-                Category: e.Category,
-                Amount: e.Amount,
-                Description: e.Description
-            ));
     }
 
     public static IEnumerable<string> GenerateMarkdownForDailyEntry(DailyEntry dailyEntry)

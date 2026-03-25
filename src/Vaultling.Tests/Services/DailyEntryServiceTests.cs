@@ -21,29 +21,70 @@ public class DailyEntryServiceTests
     }
 
     [Fact]
-    public void ToWorkoutLogs_ConvertsCorrectly()
+    public void ProcessDailyEntry_AppendsWorkoutAndExpenseLogs()
     {
-        var entry = ReadEntryFromFile(TestDataPath);
-        var logs = DailyEntryService.ToWorkoutLogs(entry).ToList();
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-daily-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
 
-        Assert.Equal(2, logs.Count);
-        Assert.Equal("07", logs[0].Day);
-        Assert.Equal("03", logs[0].Month);
-        Assert.Equal("pushups", logs[0].Type);
-        Assert.Equal("20-20-20", logs[0].Reps);
-    }
+        try
+        {
+            var todayFile = Path.Combine(tempDir, "daily-entry.md");
+            File.Copy(TestDataPath, todayFile);
 
-    [Fact]
-    public void ToExpenseLogs_ConvertsCorrectly()
-    {
-        var entry = ReadEntryFromFile(TestDataPath);
-        var logs = DailyEntryService.ToExpenseLogs(entry).ToList();
+            var workoutLog = Path.Combine(tempDir, "workouts.csv");
+            File.WriteAllLines(workoutLog, ["month,day,type,reps"]);
 
-        Assert.Equal(2, logs.Count);
-        Assert.Equal(3, logs[0].Month);
-        Assert.Equal(7, logs[0].Day);
-        Assert.Equal("food", logs[0].Category);
-        Assert.Equal(45.50m, logs[0].Amount);
+            var scheduleFile = Path.Combine(tempDir, "schedule.csv");
+            File.WriteAllLines(scheduleFile, ["day,exercise1,exercise2"]);
+
+            var expenseFile = Path.Combine(tempDir, "expenses.csv");
+            File.WriteAllLines(expenseFile, ["month,day,category,amount,description"]);
+
+            var service = new DailyEntryService(
+                new DailyEntryRepository(Options.Create(new DailyEntryOptions
+                {
+                    TodayFile = todayFile,
+                    HistoryDirectory = tempDir
+                })),
+                new WorkoutRepository(Options.Create(new WorkoutOptions
+                {
+                    LogFile = workoutLog,
+                    ScheduleFile = scheduleFile
+                }), TimeProvider.System),
+                new ExpenseRepository(Options.Create(new ExpenseOptions
+                {
+                    DataFile = expenseFile
+                })),
+                new CalendarRepository(Options.Create(new CalendarOptions())),
+                TimeProvider.System);
+
+            service.ProcessDailyEntry();
+
+            var workouts = new WorkoutRepository(
+                Options.Create(new WorkoutOptions { LogFile = workoutLog }),
+                TimeProvider.System)
+                .ReadWorkoutLogs().ToList();
+
+            Assert.Equal(2, workouts.Count);
+            Assert.Equal("03", workouts[0].Month);
+            Assert.Equal("07", workouts[0].Day);
+            Assert.Equal("pushups", workouts[0].Type);
+            Assert.Equal("20-20-20", workouts[0].Reps);
+
+            var expenses = new ExpenseRepository(
+                Options.Create(new ExpenseOptions { DataFile = expenseFile }))
+                .ReadExpenses().ToList();
+
+            Assert.Equal(2, expenses.Count);
+            Assert.Equal(3, expenses[0].Month);
+            Assert.Equal(7, expenses[0].Day);
+            Assert.Equal("food", expenses[0].Category);
+            Assert.Equal(45.50m, expenses[0].Amount);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
     }
 
     [Fact]
