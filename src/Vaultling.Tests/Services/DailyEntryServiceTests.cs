@@ -75,7 +75,7 @@ public class DailyEntryServiceTests
             [
                 new CalendarOccurrence(new DateTime(2026, 3, 26, 18, 0, 0), "Piano lesson"),
                 new CalendarOccurrence(new DateTime(2026, 3, 27, 20, 0, 0), "Movie night"),
-                new CalendarOccurrence(new DateTime(2026, 3, 28, 0, 0, 0), "Picnic"),
+                new CalendarOccurrence(new DateTime(2026, 3, 28, 0, 0, 0), "Picnic", true),
                 new CalendarOccurrence(new DateTime(2026, 4, 2, 18, 0, 0), "Piano lesson")
             ]);
 
@@ -85,7 +85,7 @@ public class DailyEntryServiceTests
         Assert.Contains(expectedCalendarLink, markdown);
         Assert.Contains("- Azi la 18:00: Piano lesson", markdown);
         Assert.Contains("- Mâine la 20:00: Movie night", markdown);
-        Assert.Contains("- Sâmbătă: Picnic", markdown);
+        Assert.Contains("- ~~Sâmbătă: Picnic~~", markdown);
         Assert.Contains("- Joia următoare la 18:00: Piano lesson", markdown);
     }
 

@@ -81,7 +81,9 @@ public class DailyEntryService(
             ? string.Join("\n", upcomingEvents.Select(e =>
             {
                 var dateTimeLabel = Utils.GetRelativeDateTimeLabel(e.Date, today);
-                return $"- {dateTimeLabel}: {e.Note}";
+                var eventText = $"{dateTimeLabel}: {e.Note}";
+                var renderedEventText = e.Cancelled ? $"~~{eventText}~~" : eventText;
+                return $"- {renderedEventText}";
             }))
             : "";
 

@@ -24,8 +24,9 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         {
             var schedule = parts[0].Trim().ToLowerInvariant();
             var note = parts[1].Trim();
-            return ParseRecurringSchedule(schedule, note);
-        }, maxColumnSplit: 2)
+            var cancelled = parts.Length > 2 && bool.TryParse(parts[2].Trim(), out var parsed) && parsed;
+            return ParseRecurringSchedule(schedule, note, cancelled);
+        }, maxColumnSplit: 3)
                 .SelectMany(e => GetOccurrences(
                     e,
                     new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -35,7 +36,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         var singleEventsFile = Utils.ResolveYearPath(_options.SingleEventsFile, year);
         var singleOccurrences =
             !string.IsNullOrEmpty(singleEventsFile) && File.Exists(singleEventsFile)
-            ? Utils.ParseCsv(File.ReadLines(singleEventsFile), parts => ParseSingleOccurrence(parts, year), maxColumnSplit: 2)
+            ? Utils.ParseCsv(File.ReadLines(singleEventsFile), parts => ParseSingleOccurrence(parts, year), maxColumnSplit: 3)
             : [];
 
         return recurringOccurrences.Concat(singleOccurrences);
@@ -54,11 +55,12 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
     {
         var datePart = parts[0].Trim();
         var note = parts[1].Trim();
+        var cancelled = parts.Length > 2 && bool.TryParse(parts[2].Trim(), out var parsed) && parsed;
         var date = DateTime.Parse(
             $"{year}-{datePart}",
             CultureInfo.InvariantCulture,
             DateTimeStyles.None);
-        return new CalendarOccurrence(date, note);
+        return new CalendarOccurrence(date, note, cancelled);
     }
 
     internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
@@ -77,7 +79,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         return [];
     }
 
-    private static RecurringEvent ParseRecurringSchedule(string schedule, string note)
+    private static RecurringEvent ParseRecurringSchedule(string schedule, string note, bool cancelled)
     {
         var atIndex = schedule.IndexOf(" at ", StringComparison.Ordinal);
         if (atIndex >= 0)
@@ -85,20 +87,20 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             var dayName = schedule[..atIndex].Trim();
             var time = schedule[(atIndex + 4)..].Trim();
             if (Array.Exists(DayNames, d => d == dayName))
-                return new RecurringEvent(Type: dayName, Schedule: time, Note: note);
+                return new RecurringEvent(Type: dayName, Schedule: time, Note: note, Cancelled: cancelled);
         }
 
         if (schedule.StartsWith("monthly ", StringComparison.Ordinal))
-            return new RecurringEvent(Type: "monthly", Schedule: schedule[8..].Trim(), Note: note);
+            return new RecurringEvent(Type: "monthly", Schedule: schedule[8..].Trim(), Note: note, Cancelled: cancelled);
 
         if (schedule.Length >= 5 && schedule[2] == '-')
         {
             var month = int.Parse(schedule[..2]);
             var day = schedule[3..];
-            return new RecurringEvent(Type: MonthNames[month - 1], Schedule: day, Note: note);
+            return new RecurringEvent(Type: MonthNames[month - 1], Schedule: day, Note: note, Cancelled: cancelled);
         }
 
-        return new RecurringEvent(Type: schedule, Schedule: "", Note: note);
+        return new RecurringEvent(Type: schedule, Schedule: "", Note: note, Cancelled: cancelled);
     }
 
     private static IEnumerable<CalendarOccurrence> GetYearlyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
@@ -110,7 +112,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         {
             var dt = new DateTime(year, monthIndex, day);
             if (dt >= from.Date && dt <= to.Date)
-                yield return new CalendarOccurrence(dt, recurring.Note);
+                yield return new CalendarOccurrence(dt, recurring.Note, recurring.Cancelled);
         }
     }
 
@@ -125,7 +127,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         while (current <= to.Date)
         {
             if (current.DayOfWeek == targetDay)
-                yield return new CalendarOccurrence(current.Add(new TimeSpan(hour, minute, 0)), recurring.Note);
+                yield return new CalendarOccurrence(current.Add(new TimeSpan(hour, minute, 0)), recurring.Note, recurring.Cancelled);
             current = current.AddDays(1);
         }
     }
@@ -144,7 +146,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             {
                 var dt = new DateTime(current.Year, current.Month, day);
                 if (dt >= from.Date && dt <= to.Date)
-                    yield return new CalendarOccurrence(dt, recurring.Note);
+                    yield return new CalendarOccurrence(dt, recurring.Note, recurring.Cancelled);
             }
 
             current = current.AddMonths(1);

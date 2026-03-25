@@ -62,7 +62,9 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
                     var timeStr = evt.Date.TimeOfDay == TimeSpan.Zero
                         ? ""
                         : $" at {evt.Date:HH:mm}";
-                    sections.Add($"- {evt.Date.Day:00}{timeStr}: {evt.Note}");
+                    var eventText = $"{evt.Date.Day:00}{timeStr}: {evt.Note}";
+                    var renderedEventText = evt.Cancelled ? $"~~{eventText}~~" : eventText;
+                    sections.Add($"- {renderedEventText}");
                 }
             }
 

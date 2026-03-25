@@ -30,8 +30,8 @@ public class CalendarRepositoryTests
             var singleEventsTemplate = Path.Combine(tempDir, "{year}-events-csv.md");
             var singleEvents2026 = Path.Combine(tempDir, "2026-events-csv.md");
             File.WriteAllLines(singleEvents2026, [
-                "date,note",
-                "03-15T10:00,Doctor appointment"
+                "date,note,cancelled",
+                "03-15T10:00,Doctor appointment,true"
             ]);
 
             var occurrences = MakeRepository(recurringFile, singleEventsTemplate)
@@ -41,6 +41,7 @@ public class CalendarRepositoryTests
             var only = Assert.Single(occurrences);
             Assert.Equal(new DateTime(2026, 3, 15, 10, 0, 0), only.Date);
             Assert.Equal("Doctor appointment", only.Note);
+            Assert.True(only.Cancelled);
         }
         finally
         {
@@ -56,8 +57,8 @@ public class CalendarRepositoryTests
     {
         var tempFile = Path.GetTempFileName();
         File.WriteAllLines(tempFile, [
-            "schedule,note",
-            "thursday at 18:00,Piano lesson"
+            "schedule,note,cancelled",
+            "thursday at 18:00,Piano lesson,true"
         ]);
 
         var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
@@ -69,6 +70,7 @@ public class CalendarRepositoryTests
         Assert.Equal(DayOfWeek.Thursday, first.Date.DayOfWeek);
         Assert.Equal(18, first.Date.Hour);
         Assert.Equal("Piano lesson", first.Note);
+        Assert.True(first.Cancelled);
     }
 
     [Fact]
@@ -76,8 +78,8 @@ public class CalendarRepositoryTests
     {
         var tempFile = Path.GetTempFileName();
         File.WriteAllLines(tempFile, [
-            "schedule,note",
-            "monthly 15,Pay rent"
+            "schedule,note,cancelled",
+            "monthly 15,Pay rent,false"
         ]);
 
         var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
@@ -87,6 +89,7 @@ public class CalendarRepositoryTests
         Assert.Equal(12, occurrences.Count);
         Assert.All(occurrences, o => Assert.Equal(15, o.Date.Day));
         Assert.All(occurrences, o => Assert.Equal("Pay rent", o.Note));
+        Assert.All(occurrences, o => Assert.False(o.Cancelled));
     }
 
     [Fact]
@@ -94,8 +97,8 @@ public class CalendarRepositoryTests
     {
         var tempFile = Path.GetTempFileName();
         File.WriteAllLines(tempFile, [
-            "schedule,note",
-            "03-15,Doctor appointment"
+            "schedule,note,cancelled",
+            "03-15,Doctor appointment,true"
         ]);
 
         var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
@@ -105,6 +108,7 @@ public class CalendarRepositoryTests
         var only = Assert.Single(occurrences);
         Assert.Equal(new DateTime(2026, 3, 15), only.Date);
         Assert.Equal("Doctor appointment", only.Note);
+        Assert.True(only.Cancelled);
     }
 
     [Fact]
@@ -112,8 +116,8 @@ public class CalendarRepositoryTests
     {
         var lines = new[]
         {
-            "schedule,note",
-            "monthly 31,Month end"
+            "schedule,note,cancelled",
+            "monthly 31,Month end,false"
         };
 
         var tempFile = Path.GetTempFileName();
