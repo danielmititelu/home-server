@@ -272,4 +272,21 @@ public class CalendarRepositoryTests
             }
         }
     }
+
+    [Fact]
+    public void ReadCalendarOccurrences_StopsAfterCycleEnd()
+    {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, [
+            "schedule,note,cycle-start,cycle-count,cycle-end",
+            "thursday at 18:00,Piano lesson,,,2026-01-15"
+        ]);
+
+        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
+        File.Delete(tempFile);
+
+        Assert.True(occurrences.Count > 0);
+        Assert.All(occurrences, o => Assert.True(o.Date <= new DateTime(2026, 1, 15, 23, 59, 59)));
+        Assert.DoesNotContain(occurrences, o => o.Date >= new DateTime(2026, 1, 22, 18, 0, 0));
+    }
 }

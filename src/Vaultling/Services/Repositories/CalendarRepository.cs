@@ -26,8 +26,9 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             var note = parts[1].Trim();
             var cycleStart = parts.Length > 2 && DateTime.TryParse(parts[2].Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var cs) ? cs : (DateTime?)null;
             var cycleCount = parts.Length > 3 && int.TryParse(parts[3].Trim(), out var cc) ? cc : (int?)null;
-            return ParseRecurringSchedule(schedule, note, cycleStart, cycleCount);
-        }, maxColumnSplit: 4).ToList()
+            var cycleEnd = parts.Length > 4 && DateTime.TryParse(parts[4].Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var ce) ? ce : (DateTime?)null;
+            return ParseRecurringSchedule(schedule, note, cycleStart, cycleCount, cycleEnd);
+        }, maxColumnSplit: 5).ToList()
             : [];
 
         var recurringOccurrences = recurringEvents
@@ -70,6 +71,13 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
 
     internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
     {
+        if (recurring.CycleEnd.HasValue)
+        {
+            var cycleEndOffset = new DateTimeOffset(recurring.CycleEnd.Value, TimeSpan.Zero);
+            if (cycleEndOffset < to)
+                to = cycleEndOffset;
+        }
+
         var type = recurring.Type.ToLowerInvariant();
 
         if (type == "monthly")
@@ -84,7 +92,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         return [];
     }
 
-    private static RecurringEvent ParseRecurringSchedule(string schedule, string note, DateTime? cycleStart, int? cycleCount)
+    private static RecurringEvent ParseRecurringSchedule(string schedule, string note, DateTime? cycleStart, int? cycleCount, DateTime? cycleEnd = null)
     {
         var atIndex = schedule.IndexOf(" at ", StringComparison.Ordinal);
         if (atIndex >= 0)
@@ -92,20 +100,20 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             var dayName = schedule[..atIndex].Trim();
             var time = schedule[(atIndex + 4)..].Trim();
             if (Array.Exists(DayNames, d => d == dayName))
-                return new RecurringEvent(Type: dayName, Schedule: time, Note: note, CycleStart: cycleStart, CycleCount: cycleCount);
+                return new RecurringEvent(Type: dayName, Schedule: time, Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
         }
 
         if (schedule.StartsWith("monthly ", StringComparison.Ordinal))
-            return new RecurringEvent(Type: "monthly", Schedule: schedule[8..].Trim(), Note: note, CycleStart: cycleStart, CycleCount: cycleCount);
+            return new RecurringEvent(Type: "monthly", Schedule: schedule[8..].Trim(), Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
 
         if (schedule.Length >= 5 && schedule[2] == '-')
         {
             var month = int.Parse(schedule[..2]);
             var day = schedule[3..];
-            return new RecurringEvent(Type: MonthNames[month - 1], Schedule: day, Note: note, CycleStart: cycleStart, CycleCount: cycleCount);
+            return new RecurringEvent(Type: MonthNames[month - 1], Schedule: day, Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
         }
 
-        return new RecurringEvent(Type: schedule, Schedule: "", Note: note, CycleStart: cycleStart, CycleCount: cycleCount);
+        return new RecurringEvent(Type: schedule, Schedule: "", Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
     }
 
     private static IEnumerable<CalendarOccurrence> GetYearlyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
