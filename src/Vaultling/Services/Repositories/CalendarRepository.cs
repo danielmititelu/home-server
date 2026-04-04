@@ -105,6 +105,15 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         return new CalendarOccurrence(new DateTime(year, month, day, hour, minute, 0), note, cancelled);
     }
 
+    public IEnumerable<string> ReadCalendarReportLines(int year)
+    {
+        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
+        if (string.IsNullOrEmpty(reportFile) || !File.Exists(reportFile))
+            return [];
+
+        return File.ReadLines(reportFile);
+    }
+
     public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)
     {
         var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);

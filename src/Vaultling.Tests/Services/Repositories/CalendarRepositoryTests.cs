@@ -275,6 +275,53 @@ public class CalendarRepositoryTests
     }
 
     [Fact]
+    public void ParseReportEventLine_AllDayEvent_HasMidnightTime()
+    {
+        var occurrence = CalendarRepository.ParseReportEventLine("- 15: Nancy birthday", 2026, 3);
+
+        Assert.NotNull(occurrence);
+        Assert.Equal(new DateTime(2026, 3, 15), occurrence!.Date);
+        Assert.Equal(TimeSpan.Zero, occurrence.Date.TimeOfDay);
+        Assert.Equal("Nancy birthday", occurrence.Note);
+        Assert.False(occurrence.Cancelled);
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_ReportAllDayEvent_IsIncluded()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var recurringFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(recurringFile, ["schedule,note"]);
+
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 03 - March",
+                "",
+                "- 15: Nancy birthday"
+            ]);
+
+            var occurrences = MakeRepository(recurringFile, Path.Combine(tempDir, "{year}-calendar-report.md"))
+                .ReadCalendarOccurrences(2026)
+                .ToList();
+
+            var only = Assert.Single(occurrences);
+            Assert.Equal(new DateTime(2026, 3, 15), only.Date);
+            Assert.Equal(TimeSpan.Zero, only.Date.TimeOfDay);
+            Assert.Equal("Nancy birthday", only.Note);
+            Assert.False(only.Cancelled);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ReadCalendarOccurrences_StopsAfterCycleEnd()
     {
         var tempFile = Path.GetTempFileName();

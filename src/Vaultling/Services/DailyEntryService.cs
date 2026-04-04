@@ -73,7 +73,7 @@ public class DailyEntryService(
                 var dateTimeLabel = Utils.GetRelativeDateTimeLabel(e.Date, today);
                 var eventText = $"{dateTimeLabel}: {e.Note}";
                 var renderedEventText = e.Cancelled ? $"~~{eventText}~~" : eventText;
-                return $"- {renderedEventText}";
+                return $"{renderedEventText}";
             }))
             : "";
 
@@ -83,7 +83,7 @@ public class DailyEntryService(
 
             # {DailySectionName.Calendar}
             {calendarLines}
-            - {calendarReportLink}
+            {calendarReportLink}
 
             # {DailySectionName.Workout}
             exercise,reps
