@@ -687,4 +687,119 @@ public class CalendarRepositoryTests
                 Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [Theory]
+    [InlineData("Avion spre Vienna 2026-06-05T08:00 -> 2026-06-10T20:00", "Avion spre Vienna", 2026, 6, 5, 8, 0, 2026, 6, 10, 20, 0)]
+    [InlineData("Flight to Paris 2026-03-01T06:00 -> 2026-03-07T19:00", "Flight to Paris", 2026, 3, 1, 6, 0, 2026, 3, 7, 19, 0)]
+    public void ReadExpenseEvents_RangedDate_TwoEventsWithSameNote(
+        string description,
+        string expectedNote,
+        int yr1, int mo1, int d1, int h1, int min1,
+        int yr2, int mo2, int d2, int h2, int min2)
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, ["schedule,note"]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                $"1,15,transport,600,{description}"
+            ]);
+
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+                .ReadCalendarOccurrences(2026)
+                .OrderBy(o => o.Date)
+                .ToList();
+
+            Assert.Equal(2, occurrences.Count);
+            Assert.All(occurrences, o => Assert.Equal(expectedNote, o.Note));
+            Assert.Equal(new DateTime(yr1, mo1, d1, h1, min1, 0), occurrences[0].Date);
+            Assert.Equal(new DateTime(yr2, mo2, d2, h2, min2, 0), occurrences[1].Date);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetTravelCityForDate_InsideWindow_ReturnsTravelCity()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, ["schedule,note"]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "1,15,transport,600,Avion spre Vienna 2026-06-05T08:00 -> 2026-06-10T20:00"
+            ]);
+
+            var repo = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"));
+
+            // Departure day — in Vienna
+            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 5), 2026));
+            // Middle of trip
+            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 8), 2026));
+            // Day before return (last day away)
+            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 9), 2026));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetTravelCityForDate_OnReturnDayAndOutside_ReturnsNull()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, ["schedule,note"]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "1,15,transport,600,Avion spre Vienna 2026-06-05T08:00 -> 2026-06-10T20:00"
+            ]);
+
+            var repo = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"));
+
+            // Return day — back home
+            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 10), 2026));
+            // Before departure
+            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 4), 2026));
+            // After return
+            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 11), 2026));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GetTravelCityForDate_NoExpenseFile_ReturnsNull()
+    {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, ["schedule,note"]);
+        var repo = MakeRepository(tempFile, expenseDataFile: "");
+
+        Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 7), 2026));
+
+        File.Delete(tempFile);
+    }
 }

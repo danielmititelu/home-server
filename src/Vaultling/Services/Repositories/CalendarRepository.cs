@@ -59,8 +59,11 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
     private static readonly Regex DateInDescriptionRegex =
         new(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled);
 
+    private static readonly Regex RangeDateInDescriptionRegex =
+        new(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b\s*->\s*\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled);
+
     private static readonly Regex ConnectorWordRegex =
-        new(@"\s+\b(?:pe|at|on|in|la)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        new(@"\s+\b(?:pe|at|on|in|la|spre|to)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     internal IEnumerable<CalendarOccurrence> ReadExpenseEvents(int year)
     {
@@ -76,6 +79,25 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
                 if (parts.Length < 5) continue;
                 var description = parts[4].Trim();
 
+                // Range match (departure -> return) takes priority
+                var rangeMatch = RangeDateInDescriptionRegex.Match(description);
+                if (rangeMatch.Success)
+                {
+                    var notePart = ExtractNote(description, rangeMatch.Index);
+                    if (string.IsNullOrEmpty(notePart)) continue;
+
+                    if (DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate)
+                        && depDate.Year == year)
+                        yield return new CalendarOccurrence(depDate, notePart);
+
+                    if (DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate)
+                        && retDate.Year == year)
+                        yield return new CalendarOccurrence(retDate, notePart);
+
+                    continue;
+                }
+
+                // Single date
                 var match = DateInDescriptionRegex.Match(description);
                 if (!match.Success) continue;
 
@@ -86,14 +108,55 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
 
                 if (eventDate.Year != year) continue;
 
-                var notePart = description[..match.Index];
-                notePart = ConnectorWordRegex.Replace(notePart, "").Trim();
-                if (string.IsNullOrEmpty(notePart)) continue;
+                var note = ExtractNote(description, match.Index);
+                if (string.IsNullOrEmpty(note)) continue;
 
-                var date = hasTime ? eventDate : eventDate.Date;
-                yield return new CalendarOccurrence(date, notePart);
+                yield return new CalendarOccurrence(hasTime ? eventDate : eventDate.Date, note);
             }
         }
+    }
+
+    internal string? GetTravelCityForDate(DateTime date, int year)
+    {
+        foreach (var checkYear in new[] { year - 1, year })
+        {
+            var expenseFile = Utils.ResolveYearPath(_options.ExpenseDataFile, checkYear);
+            if (string.IsNullOrEmpty(expenseFile) || !File.Exists(expenseFile))
+                continue;
+
+            foreach (var parts in Utils.ParseCsv(File.ReadLines(expenseFile),
+                p => p, maxColumnSplit: 5))
+            {
+                if (parts.Length < 5) continue;
+                var description = parts[4].Trim();
+
+                var rangeMatch = RangeDateInDescriptionRegex.Match(description);
+                if (!rangeMatch.Success) continue;
+
+                if (!DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate))
+                    continue;
+                if (!DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate))
+                    continue;
+
+                if (date.Date < depDate.Date || date.Date >= retDate.Date) continue;
+
+                var notePart = ExtractNote(description, rangeMatch.Index);
+                if (string.IsNullOrEmpty(notePart)) continue;
+
+                var words = notePart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length == 0) continue;
+
+                return words[^1];
+            }
+        }
+
+        return null;
+    }
+
+    private static string ExtractNote(string description, int endIndex)
+    {
+        var notePart = description[..endIndex];
+        return ConnectorWordRegex.Replace(notePart, "").Trim();
     }
 
     internal DateTime? FindLatestMatchingExpense(string cycleExpenseMatch, int year)
