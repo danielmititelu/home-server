@@ -49,10 +49,51 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
                     .Where(o => o.Date.Year == year);
             });
 
+        var expenseEventOccurrences = ReadExpenseEvents(year);
         var reportOccurrences = ReadReportOccurrences(year);
 
-        return MergeOccurrences(regularOccurrences.Concat(cycleOccurrences), reportOccurrences)
+        return MergeOccurrences(regularOccurrences.Concat(cycleOccurrences).Concat(expenseEventOccurrences), reportOccurrences)
             .OrderBy(o => o.Date);
+    }
+
+    private static readonly Regex DateInDescriptionRegex =
+        new(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled);
+
+    private static readonly Regex ConnectorWordRegex =
+        new(@"\s+\b(?:pe|at|on|in|la)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    internal IEnumerable<CalendarOccurrence> ReadExpenseEvents(int year)
+    {
+        foreach (var checkYear in new[] { year - 1, year })
+        {
+            var expenseFile = Utils.ResolveYearPath(_options.ExpenseDataFile, checkYear);
+            if (string.IsNullOrEmpty(expenseFile) || !File.Exists(expenseFile))
+                continue;
+
+            foreach (var parts in Utils.ParseCsv(File.ReadLines(expenseFile),
+                p => p, maxColumnSplit: 5))
+            {
+                if (parts.Length < 5) continue;
+                var description = parts[4].Trim();
+
+                var match = DateInDescriptionRegex.Match(description);
+                if (!match.Success) continue;
+
+                var dateStr = match.Groups[1].Value;
+                var hasTime = dateStr.Length > 10;
+                if (!DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var eventDate))
+                    continue;
+
+                if (eventDate.Year != year) continue;
+
+                var notePart = description[..match.Index];
+                notePart = ConnectorWordRegex.Replace(notePart, "").Trim();
+                if (string.IsNullOrEmpty(notePart)) continue;
+
+                var date = hasTime ? eventDate : eventDate.Date;
+                yield return new CalendarOccurrence(date, notePart);
+            }
+        }
     }
 
     internal DateTime? FindLatestMatchingExpense(string cycleExpenseMatch, int year)

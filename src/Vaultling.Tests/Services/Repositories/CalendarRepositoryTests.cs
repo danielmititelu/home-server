@@ -540,4 +540,151 @@ public class CalendarRepositoryTests
         Assert.Equal(new DateTime(2026, 1, 22, 18, 0, 0), occurrences[3].Date);
         Assert.Equal(new DateTime(2026, 1, 29, 18, 0, 0), occurrences[4].Date);
     }
+
+    [Theory]
+    [InlineData("Concert metalica pe 2026-06-20T20:00", "Concert metalica", 2026, 6, 20, 20, 0)]
+    [InlineData("Metalica concert at 2026-06-20T20:00", "Metalica concert", 2026, 6, 20, 20, 0)]
+    [InlineData("Concert metalica pe 2026-06-20", "Concert metalica", 2026, 6, 20, 0, 0)]
+    [InlineData("Some event on 2026-03-15T09:30", "Some event", 2026, 3, 15, 9, 30)]
+    [InlineData("Party in 2026-12-31", "Party", 2026, 12, 31, 0, 0)]
+    [InlineData("Event la 2026-07-04T18:00", "Event", 2026, 7, 4, 18, 0)]
+    public void ReadExpenseEvents_ParsesDateFromDescription(
+        string description, string expectedNote,
+        int yr, int mo, int day, int hr, int min)
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, ["schedule,note"]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                $"4,1,fun,200,{description}"
+            ]);
+
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+                .ReadCalendarOccurrences(2026)
+                .ToList();
+
+            var evt = Assert.Single(occurrences);
+            Assert.Equal(expectedNote, evt.Note);
+            Assert.Equal(new DateTime(yr, mo, day, hr, min, 0), evt.Date);
+            Assert.False(evt.Cancelled);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadExpenseEvents_NoDateInDescription_NoEvent()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, ["schedule,note"]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "4,1,fun,200,Concert metalica"
+            ]);
+
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+                .ReadCalendarOccurrences(2026)
+                .ToList();
+
+            Assert.Empty(occurrences);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadExpenseEvents_PreviousYearExpenseWithFutureDateAppearsInTargetYear()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, ["schedule,note"]);
+
+            // Expense logged in 2025 file, but event date is 2026
+            var expenseFile2025 = Path.Combine(tempDir, "2025-expenses-csv.md");
+            File.WriteAllLines(expenseFile2025, [
+                "month,day,category,amount,description",
+                "12,15,fun,300,Metalica concert at 2026-06-20T20:00"
+            ]);
+            // No 2026 expense file
+            var expenseFile2026 = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile2026, ["month,day,category,amount,description"]);
+
+            var occurrences2025 = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+                .ReadCalendarOccurrences(2025)
+                .ToList();
+            var occurrences2026 = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+                .ReadCalendarOccurrences(2026)
+                .ToList();
+
+            // Event in 2026 should appear in 2026 report, not 2025
+            Assert.Empty(occurrences2025);
+            var evt = Assert.Single(occurrences2026);
+            Assert.Equal("Metalica concert", evt.Note);
+            Assert.Equal(new DateTime(2026, 6, 20, 20, 0, 0), evt.Date);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadExpenseEvents_CancellableViaReportStrikethrough()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, ["schedule,note"]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "4,1,fun,200,Concert metalica pe 2026-06-20T20:00"
+            ]);
+
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 06 - June",
+                "",
+                "- ~~20 at 20:00: Concert metalica~~"
+            ]);
+
+            var occurrences = MakeRepository(eventsFile, Path.Combine(tempDir, "{year}-calendar-report.md"), Path.Combine(tempDir, "{year}-expenses-csv.md"))
+                .ReadCalendarOccurrences(2026)
+                .ToList();
+
+            var evt = Assert.Single(occurrences);
+            Assert.Equal("Concert metalica", evt.Note);
+            Assert.True(evt.Cancelled);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }
