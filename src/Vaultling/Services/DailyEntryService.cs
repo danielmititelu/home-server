@@ -6,9 +6,10 @@ public class DailyEntryService(
     WorkoutRepository workoutRepository,
     ExpenseRepository expenseRepository,
     CalendarRepository calendarRepository,
+    WeatherRepository weatherRepository,
     TimeProvider timeProvider)
 {
-    public void ProcessDailyEntry()
+    public async Task ProcessDailyEntryAsync()
     {
         var todayDate = timeProvider.GetLocalNow().ToIsoDateString();
         var yesterdayEntry = dailyEntryRepository.ReadDailyEntry();
@@ -45,17 +46,21 @@ public class DailyEntryService(
         var currentYear = timeProvider.GetLocalNow().Year;
         var calendarEvents = calendarRepository.ReadCalendarOccurrences(currentYear);
         
+        var city = yesterdayEntry.City;
+        var weather = await weatherRepository.FetchWeatherAsync(city);
+
         var newTodayEntry = new DailyEntry(
             Date: timeProvider.GetLocalNow(),
             Workouts: todayWorkouts,
             Todos: carryOverTodos,
             Expenses: [],
-            CalendarEvents: calendarEvents
+            CalendarEvents: calendarEvents,
+            City: city
         );
-        dailyEntryRepository.WriteDailyEntry(GenerateMarkdownForDailyEntry(newTodayEntry));
+        dailyEntryRepository.WriteDailyEntry(GenerateMarkdownForDailyEntry(newTodayEntry, weather));
     }
 
-    public static IEnumerable<string> GenerateMarkdownForDailyEntry(DailyEntry dailyEntry)
+    public static IEnumerable<string> GenerateMarkdownForDailyEntry(DailyEntry dailyEntry, WeatherInfo? weather = null)
     {
         var workoutLines = string.Join("\n", dailyEntry.Workouts.Select(w => $"{w.Exercise},{w.Reps}"));
         var todoItems = dailyEntry.Todos.ToList();
@@ -73,13 +78,20 @@ public class DailyEntryService(
                 var dateTimeLabel = Utils.GetRelativeDateTimeLabel(e.Date, today);
                 var eventText = $"{dateTimeLabel}: {e.Note}";
                 var renderedEventText = e.Cancelled ? $"~~{eventText}~~" : eventText;
-                return $"{renderedEventText}";
+                return renderedEventText;
             }))
             : "";
+
+        var weatherLines = weather is { Summary: not null, Sunrise: not null, Sunset: not null }
+            ? $"{weather.City}\n{weather.Summary}\n🌅 {weather.Sunrise} 🌇 {weather.Sunset}"
+            : dailyEntry.City;
 
         var markdown = $"""
             # {DailySectionName.Date}
             {dailyEntry.Date.ToIsoDateString()}
+
+            # {DailySectionName.Weather}
+            {weatherLines}
 
             # {DailySectionName.Calendar}
             {calendarLines}

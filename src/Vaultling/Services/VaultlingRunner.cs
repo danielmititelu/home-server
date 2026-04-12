@@ -7,11 +7,11 @@ public class VaultlingRunner(
     CalendarService calendarService,
     ErrorRepository errorRepository)
 {
-    public void Run()
+    public async Task RunAsync()
     {
         try
         {
-            dailyEntryService.ProcessDailyEntry();
+            await dailyEntryService.ProcessDailyEntryAsync();
             workoutService.ProduceWorkoutReport();
             expenseService.ProduceExpenseReport();
             calendarService.ProduceCalendarReport();

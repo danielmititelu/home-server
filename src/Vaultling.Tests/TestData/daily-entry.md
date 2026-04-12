@@ -1,6 +1,9 @@
 # Date
 2026-03-07
 
+# Weather
+Bucharest
+
 # Workout
 exercise,reps
 pushups,20-20-20

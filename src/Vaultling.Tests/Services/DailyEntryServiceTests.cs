@@ -20,8 +20,18 @@ public class DailyEntryServiceTests
         return repo.ReadDailyEntry();
     }
 
+    private static WeatherRepository CreateStubWeatherRepository() =>
+        new WeatherRepository(new HttpClient(new StubHttpHandler()));
+
+    private sealed class StubHttpHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable));
+    }
+
     [Fact]
-    public void ProcessDailyEntry_AppendsWorkoutAndExpenseLogs()
+    public async Task ProcessDailyEntry_AppendsWorkoutAndExpenseLogs()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-daily-{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
@@ -56,9 +66,10 @@ public class DailyEntryServiceTests
                     DataFile = expenseFile
                 })),
                 new CalendarRepository(Options.Create(new CalendarOptions())),
+                CreateStubWeatherRepository(),
                 TimeProvider.System);
 
-            service.ProcessDailyEntry();
+            await service.ProcessDailyEntryAsync();
 
             var workouts = new WorkoutRepository(
                 Options.Create(new WorkoutOptions { LogFile = workoutLog }),
@@ -101,6 +112,7 @@ public class DailyEntryServiceTests
         Assert.Equal(original.Date.Date, reparsed.Date.Date);
         Assert.Equal(original.Workouts.Count(), reparsed.Workouts.Count());
         Assert.Equal(original.Todos.Count(), reparsed.Todos.Count());
+        Assert.Equal(original.City, reparsed.City);
     }
 
     [Fact]
@@ -124,10 +136,10 @@ public class DailyEntryServiceTests
         var expectedCalendarLink = Vaultling.Utils.Utils.GetCalendarReportMonthLink(entryDate.DateTime);
 
         Assert.Contains(expectedCalendarLink, markdown);
-        Assert.Contains("- Azi la 18:00: Piano lesson", markdown);
-        Assert.Contains("- Mâine la 20:00: Movie night", markdown);
-        Assert.Contains("- ~~Sâmbătă: Picnic~~", markdown);
-        Assert.Contains("- Joia următoare la 18:00: Piano lesson", markdown);
+        Assert.Contains("Azi la 18:00: Piano lesson", markdown);
+        Assert.Contains("Mâine la 20:00: Movie night", markdown);
+        Assert.Contains("~~Sâmbătă: Picnic~~", markdown);
+        Assert.Contains("Joia următoare la 18:00: Piano lesson", markdown);
     }
 
     [Fact]
@@ -144,5 +156,43 @@ public class DailyEntryServiceTests
 
         Assert.Contains("# Todo", markdown);
         Assert.Contains("- [ ]", markdown);
+    }
+
+    [Fact]
+    public void GenerateMarkdownForDailyEntry_IncludesWeatherInfo_WhenProvided()
+    {
+        var entry = new DailyEntry(
+            Date: new DateTimeOffset(2026, 4, 12, 9, 0, 0, TimeSpan.Zero),
+            Workouts: [],
+            Todos: [],
+            Expenses: [],
+            CalendarEvents: [],
+            City: "Bucharest");
+        var weather = new WeatherInfo("Bucharest", "\u2600\ufe0f 18\u00b0C, Clear sky", "06:15", "19:50");
+
+        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather));
+
+        Assert.Contains("# Weather", markdown);
+        Assert.Contains("Bucharest", markdown);
+        Assert.Contains("\u2600\ufe0f 18\u00b0C, Clear sky", markdown);
+        Assert.Contains("\ud83c\udf05 06:15 \ud83c\udf07 19:50", markdown);
+    }
+
+    [Fact]
+    public void GenerateMarkdownForDailyEntry_ShowsOnlyCity_WhenWeatherFetchFailed()
+    {
+        var entry = new DailyEntry(
+            Date: new DateTimeOffset(2026, 4, 12, 9, 0, 0, TimeSpan.Zero),
+            Workouts: [],
+            Todos: [],
+            Expenses: [],
+            CalendarEvents: [],
+            City: "Bucharest");
+
+        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather: null));
+
+        Assert.Contains("# Weather", markdown);
+        Assert.Contains("Bucharest", markdown);
+        Assert.DoesNotContain("\u00b0C", markdown);
     }
 }

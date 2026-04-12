@@ -36,7 +36,12 @@ public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
         ));
         var todos = sectionsContent[DailySectionName.Todo.ToString()];
 
-        return new DailyEntry(date, workouts, todos, expenses, []);
+        var weatherSection = sectionsContent.TryGetValue(DailySectionName.Weather.ToString(), out var weatherLines)
+            ? weatherLines
+            : [];
+        var city = weatherSection.FirstOrDefault() ?? "";
+
+        return new DailyEntry(date, workouts, todos, expenses, [], City: city);
     }
 
     public void ArchiveDailyFile(DateTimeOffset date)

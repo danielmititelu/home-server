@@ -5,6 +5,7 @@ public record DailyExpense(string Category, decimal Amount, string Description);
 public enum DailySectionName
 {
     Date,
+    Weather,
     Workout,
     Todo,
     Expenses,
@@ -16,4 +17,5 @@ public record DailyEntry(
     IEnumerable<DailyWorkout> Workouts,
     IEnumerable<string> Todos,
     IEnumerable<DailyExpense> Expenses,
-    IEnumerable<CalendarOccurrence> CalendarEvents = default!);
+    IEnumerable<CalendarOccurrence> CalendarEvents = default!,
+    string City = "");
