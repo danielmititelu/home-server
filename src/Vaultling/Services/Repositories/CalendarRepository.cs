@@ -1,6 +1,7 @@
 namespace Vaultling.Services.Repositories;
 
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Vaultling.Utils;
 
 public class CalendarRepository(IOptions<CalendarOptions> options)
@@ -21,27 +22,91 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         var recurringEvents =
             !string.IsNullOrEmpty(recurringFile) && File.Exists(recurringFile)
             ? Utils.ParseCsv(File.ReadLines(recurringFile), parts =>
-        {
-            var schedule = parts[0].Trim().ToLowerInvariant();
-            var note = parts[1].Trim();
-            var cycleStart = parts.Length > 2 && DateTime.TryParse(parts[2].Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var cs) ? cs : (DateTime?)null;
-            var cycleCount = parts.Length > 3 && int.TryParse(parts[3].Trim(), out var cc) ? cc : (int?)null;
-            var cycleEnd = parts.Length > 4 && DateTime.TryParse(parts[4].Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var ce) ? ce : (DateTime?)null;
-            return ParseRecurringSchedule(schedule, note, cycleStart, cycleCount, cycleEnd);
-        }, maxColumnSplit: 5).ToList()
+            {
+                var schedule = parts[0].Trim().ToLowerInvariant();
+                var note = parts[1].Trim();
+                var cycleCount = parts.Length > 2 && int.TryParse(parts[2].Trim(), out var cc) ? cc : (int?)null;
+                var cycleExpenseMatch = parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]) ? parts[3].Trim() : null;
+                return ParseRecurringSchedule(schedule, note, cycleCount, cycleExpenseMatch);
+            }, maxColumnSplit: 4).ToList()
             : [];
 
-        var recurringOccurrences = recurringEvents
-                .SelectMany(e => GetOccurrences(
-                    e,
-                    new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    new DateTimeOffset(year, 12, 31, 23, 59, 59, TimeSpan.Zero)));
+        var yearFrom = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var yearTo = new DateTimeOffset(year, 12, 31, 23, 59, 59, TimeSpan.Zero);
 
-        var numberedOccurrences = ApplyCycleNumbering(recurringOccurrences, recurringEvents);
+        var regularEvents = recurringEvents.Where(e => e.CycleCount == null || e.CycleExpenseMatch == null);
+        var cycleEvents = recurringEvents.Where(e => e.CycleCount.HasValue && e.CycleExpenseMatch != null);
+
+        var regularOccurrences = regularEvents
+            .SelectMany(e => GetOccurrences(e, yearFrom, yearTo));
+
+        var cycleOccurrences = cycleEvents
+            .SelectMany(e =>
+            {
+                var expenseDate = FindLatestMatchingExpense(e.CycleExpenseMatch!, year);
+                if (expenseDate == null) return [];
+                return GetCycleOccurrences(e, expenseDate.Value)
+                    .Where(o => o.Date.Year == year);
+            });
+
         var reportOccurrences = ReadReportOccurrences(year);
 
-        return MergeOccurrences(numberedOccurrences, reportOccurrences)
+        return MergeOccurrences(regularOccurrences.Concat(cycleOccurrences), reportOccurrences)
             .OrderBy(o => o.Date);
+    }
+
+    internal DateTime? FindLatestMatchingExpense(string cycleExpenseMatch, int year)
+    {
+        var dates = new List<DateTime>();
+        foreach (var checkYear in new[] { year - 1, year })
+        {
+            var expenseFile = Utils.ResolveYearPath(_options.ExpenseDataFile, checkYear);
+            if (string.IsNullOrEmpty(expenseFile) || !File.Exists(expenseFile))
+                continue;
+
+            dates.AddRange(ReadMatchingExpenseDates(expenseFile, cycleExpenseMatch, checkYear));
+        }
+
+        return dates.Count > 0 ? dates.Max() : null;
+    }
+
+    private static IEnumerable<DateTime> ReadMatchingExpenseDates(string expenseFile, string cycleExpenseMatch, int year)
+    {
+        var colonIdx = cycleExpenseMatch.IndexOf(':', StringComparison.Ordinal);
+        var categoryMatch = colonIdx >= 0 ? cycleExpenseMatch[..colonIdx].Trim() : cycleExpenseMatch.Trim();
+        var descMatch = colonIdx >= 0 ? cycleExpenseMatch[(colonIdx + 1)..].Trim() : "";
+
+        return Utils.ParseCsv(File.ReadLines(expenseFile), parts =>
+        {
+            if (parts.Length < 5) return (DateTime?)null;
+            if (!int.TryParse(parts[0].Trim(), out var month) || !int.TryParse(parts[1].Trim(), out var day))
+                return (DateTime?)null;
+
+            var category = parts[2].Trim();
+            var description = parts[4].Trim();
+
+            var categoryOk = string.IsNullOrEmpty(categoryMatch) ||
+                category.Contains(categoryMatch, StringComparison.OrdinalIgnoreCase);
+            var descOk = string.IsNullOrEmpty(descMatch) ||
+                description.Contains(descMatch, StringComparison.OrdinalIgnoreCase);
+
+            return (categoryOk && descOk) ? new DateTime(year, month, day) : (DateTime?)null;
+        }, maxColumnSplit: 5).OfType<DateTime>();
+    }
+
+    internal static IEnumerable<CalendarOccurrence> GetCycleOccurrences(RecurringEvent recurring, DateTime expenseDate)
+    {
+        var count = recurring.CycleCount!.Value;
+        var from = new DateTimeOffset(expenseDate, TimeSpan.Zero);
+        var farFuture = new DateTimeOffset(expenseDate.Year + 2, 12, 31, 23, 59, 59, TimeSpan.Zero);
+
+        var occurrences = GetOccurrences(recurring, from, farFuture).Take(count + 1).ToList();
+
+        for (var i = 0; i < occurrences.Count; i++)
+        {
+            var number = (i == count) ? 1 : i + 1; // last one is the speculative 1/N
+            yield return occurrences[i] with { Note = $"{occurrences[i].Note} {number}/{count}" };
+        }
     }
 
     internal IEnumerable<CalendarOccurrence> ReadReportOccurrences(int year)
@@ -125,13 +190,6 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
 
     internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
     {
-        if (recurring.CycleEnd.HasValue)
-        {
-            var cycleEndOffset = new DateTimeOffset(recurring.CycleEnd.Value, TimeSpan.Zero);
-            if (cycleEndOffset < to)
-                to = cycleEndOffset;
-        }
-
         var type = recurring.Type.ToLowerInvariant();
 
         if (type == "monthly")
@@ -146,7 +204,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         return [];
     }
 
-    private static RecurringEvent ParseRecurringSchedule(string schedule, string note, DateTime? cycleStart, int? cycleCount, DateTime? cycleEnd = null)
+    private static RecurringEvent ParseRecurringSchedule(string schedule, string note, int? cycleCount = null, string? cycleExpenseMatch = null)
     {
         var atIndex = schedule.IndexOf(" at ", StringComparison.Ordinal);
         if (atIndex >= 0)
@@ -154,20 +212,20 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             var dayName = schedule[..atIndex].Trim();
             var time = schedule[(atIndex + 4)..].Trim();
             if (Array.Exists(DayNames, d => d == dayName))
-                return new RecurringEvent(Type: dayName, Schedule: time, Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
+                return new RecurringEvent(Type: dayName, Schedule: time, Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
         }
 
         if (schedule.StartsWith("monthly ", StringComparison.Ordinal))
-            return new RecurringEvent(Type: "monthly", Schedule: schedule[8..].Trim(), Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
+            return new RecurringEvent(Type: "monthly", Schedule: schedule[8..].Trim(), Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
 
         if (schedule.Length >= 5 && schedule[2] == '-')
         {
             var month = int.Parse(schedule[..2]);
             var day = schedule[3..];
-            return new RecurringEvent(Type: MonthNames[month - 1], Schedule: day, Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
+            return new RecurringEvent(Type: MonthNames[month - 1], Schedule: day, Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
         }
 
-        return new RecurringEvent(Type: schedule, Schedule: "", Note: note, CycleStart: cycleStart, CycleCount: cycleCount, CycleEnd: cycleEnd);
+        return new RecurringEvent(Type: schedule, Schedule: "", Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
     }
 
     private static IEnumerable<CalendarOccurrence> GetYearlyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
@@ -224,7 +282,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
         IEnumerable<CalendarOccurrence> recurringOccurrences,
         IEnumerable<CalendarOccurrence> reportOccurrences)
     {
-        // Report events override recurring events with the same date+note.
+        // Report events override recurring events matched by date + base note (stripping X/N suffix).
         // Strikethrough entries in the report cancel the matching recurring event.
         // Non-matching report events are user-added single events.
         return recurringOccurrences
@@ -232,44 +290,13 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             .GroupBy(o => new
             {
                 o.Date,
-                Note = o.Note.Trim().ToLowerInvariant()
+                Note = StripCycleNumber(o.Note).ToLowerInvariant()
             })
-            .Select(g => g.FirstOrDefault(o => o.Cancelled) ?? g.First());
+            .Select(g => g.FirstOrDefault(o => o.Cancelled) ?? g.Last());
     }
 
-    internal static IEnumerable<CalendarOccurrence> ApplyCycleNumbering(
-        IEnumerable<CalendarOccurrence> occurrences,
-        IEnumerable<RecurringEvent> recurringEvents)
+    internal static string StripCycleNumber(string note)
     {
-        var cycleRules = recurringEvents
-            .Where(e => e.CycleStart.HasValue && e.CycleCount.HasValue)
-            .ToDictionary(
-                e => e.Note.Trim().ToLowerInvariant(),
-                e => (Start: e.CycleStart!.Value, Count: e.CycleCount!.Value));
-
-        if (cycleRules.Count == 0)
-            return occurrences;
-
-        var result = occurrences.OrderBy(o => o.Date).ToList();
-
-        // For each cycle rule, number matching occurrences from cycle-start onward
-        foreach (var (noteKey, rule) in cycleRules)
-        {
-            var counter = 1;
-            for (var i = 0; i < result.Count; i++)
-            {
-                var o = result[i];
-                if (!o.Note.Trim().Equals(noteKey, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (o.Date < rule.Start)
-                    continue;
-
-                result[i] = o with { Note = $"{o.Note} {counter}/{rule.Count}" };
-                counter = counter % rule.Count + 1;
-            }
-        }
-
-        return result;
+        return Regex.Replace(note.Trim(), @" \d+/\d+$", "");
     }
 }

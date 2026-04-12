@@ -8,7 +8,7 @@ public record MonthlyCalendarSummary(
 
 public record CalendarReport(List<MonthlyCalendarSummary> Months);
 
-public record RecurringEvent(string Type, string Schedule, string Note, bool Cancelled = false, DateTime? CycleStart = null, int? CycleCount = null, DateTime? CycleEnd = null);
+public record RecurringEvent(string Type, string Schedule, string Note, bool Cancelled = false, int? CycleCount = null, string? CycleExpenseMatch = null);
 
 public record CalendarOccurrence(DateTime Date, string Note, bool Cancelled = false);
 
