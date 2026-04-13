@@ -13,14 +13,13 @@ public class ExpenseService(ExpenseRepository expenseRepository)
             .OrderBy(g => g.Key)
             .Select(monthGroup => new MonthlyExpenseSummary(
                 Month: monthGroup.Key,
-                Categories: monthGroup
+                Categories: [.. monthGroup
                     .GroupBy(e => e.Category)
                     .OrderBy(g => g.Key)
                     .Select(catGroup => new CategoryExpenseTotal(
                         Category: catGroup.Key,
                         Amount: catGroup.Sum(e => e.Amount)
-                    ))
-                    .ToList(),
+                    ))],
                 Total: monthGroup.Sum(e => e.Amount)
             ))
             .ToList();

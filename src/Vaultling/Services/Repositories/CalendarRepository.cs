@@ -26,7 +26,7 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
             d => d.ToString().ToLowerInvariant(),
             d => d);
 
-    public IEnumerable<CalendarOccurrence> ReadCalendarOccurrences(int year)
+    public IEnumerable<CalendarOccurrence> CollectCalendarOccurrencesForYear(int year)
     {
         var recurringFile = _options.EventsFile;
         var recurringEvents =
@@ -98,15 +98,6 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
         }
 
         return null;
-    }
-
-    public IEnumerable<string> ReadCalendarReportLines(int year)
-    {
-        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
-        if (string.IsNullOrEmpty(reportFile) || !File.Exists(reportFile))
-            return [];
-
-        return File.ReadLines(reportFile);
     }
 
     public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)

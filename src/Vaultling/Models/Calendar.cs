@@ -6,8 +6,6 @@ public record MonthlyCalendarSummary(
     List<CalendarOccurrence> Events
 );
 
-public record CalendarReport(List<MonthlyCalendarSummary> Months);
-
 public abstract record RecurringEvent(string Note, bool Cancelled = false);
 
 public record WeeklyRecurringEvent(DayOfWeek Day, TimeOnly Time, string Note, bool Cancelled = false, int? CycleCount = null, string? CycleExpenseCategory = null, string? CycleExpenseDesc = null)

@@ -46,7 +46,7 @@ public class DailyEntryService(
             .Where(t => !t.Contains("[x]", StringComparison.OrdinalIgnoreCase));
         
         var currentYear = timeProvider.GetLocalNow().Year;
-        var calendarEvents = calendarRepository.ReadCalendarOccurrences(currentYear);
+        var calendarEvents = calendarRepository.CollectCalendarOccurrencesForYear(currentYear);
         
         var city = yesterdayEntry.City;
         var travelCity = calendarRepository.GetTravelCityForDate(timeProvider.GetLocalNow().Date);
