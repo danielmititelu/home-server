@@ -58,7 +58,7 @@ public class DailyEntryServiceTests
                 })),
                 new WorkoutRepository(Options.Create(new WorkoutOptions
                 {
-                    LogFile = workoutLog,
+                    CurrentYearLogFile = workoutLog,
                     ScheduleFile = scheduleFile
                 }), TimeProvider.System),
                 new ExpenseRepository(Options.Create(new ExpenseOptions
@@ -74,7 +74,7 @@ public class DailyEntryServiceTests
             await service.ProcessDailyEntryAsync();
 
             var workouts = new WorkoutRepository(
-                Options.Create(new WorkoutOptions { LogFile = workoutLog }),
+                Options.Create(new WorkoutOptions { CurrentYearLogFile = workoutLog }),
                 TimeProvider.System)
                 .ReadWorkoutLogs().ToList();
 

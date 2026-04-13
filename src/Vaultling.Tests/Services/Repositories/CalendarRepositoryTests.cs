@@ -21,7 +21,7 @@ public class CalendarRepositoryTests
         return new CalendarRepository(Options.Create(new CalendarOptions
         {
             EventsFile = eventsFile,
-            ReportFile = reportFile,
+            ReportFileTemplate = reportFile,
         }), expenseRepository);
     }
 

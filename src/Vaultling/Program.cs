@@ -4,7 +4,7 @@ using Vaultling.Utils;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
     .Build();
 
 var currentYear = TimeProvider.System.GetLocalNow().Year;
@@ -16,14 +16,14 @@ services.Configure<ExpenseOptions>(configuration.GetSection("Expense"));
 services.Configure<CalendarOptions>(configuration.GetSection("Calendar"));
 services.PostConfigure<WorkoutOptions>(opts =>
 {
-    opts.LogFile = Utils.ResolveYearPath(opts.LogFile, currentYear);
-    opts.ReportFile = Utils.ResolveYearPath(opts.ReportFile, currentYear);
+    opts.CurrentYearLogFile = Utils.ResolveYearPath(opts.LogFileTemplate, currentYear);
+    opts.CurrentYearReportFile = Utils.ResolveYearPath(opts.ReportFileTemplate, currentYear);
 });
 services.PostConfigure<ExpenseOptions>(opts =>
 {
-    opts.PreviousYearDataFile = Utils.ResolveYearPath(opts.CurrentYearDataFile, currentYear - 1);
-    opts.CurrentYearDataFile = Utils.ResolveYearPath(opts.CurrentYearDataFile, currentYear);
-    opts.ReportFile = Utils.ResolveYearPath(opts.ReportFile, currentYear);
+    opts.PreviousYearDataFile = Utils.ResolveYearPath(opts.DataFileTemplate, currentYear - 1);
+    opts.CurrentYearDataFile = Utils.ResolveYearPath(opts.DataFileTemplate, currentYear);
+    opts.CurrentYearReportFile = Utils.ResolveYearPath(opts.ReportFileTemplate, currentYear);
 });
 services.AddSingleton(TimeProvider.System);
 services.AddSingleton<DailyEntryRepository>();

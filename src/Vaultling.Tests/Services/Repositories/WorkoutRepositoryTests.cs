@@ -14,7 +14,7 @@ public class WorkoutRepositoryTests
     public WorkoutRepositoryTests()
     {
         _repository = new WorkoutRepository(
-            Options.Create(new WorkoutOptions { LogFile = TestDataPath }),
+            Options.Create(new WorkoutOptions { CurrentYearLogFile = TestDataPath }),
             TimeProvider.System);
         _logs = _repository.ReadWorkoutLogs().ToList();
     }
@@ -59,7 +59,7 @@ public class WorkoutRepositoryTests
         try
         {
             var repository = new WorkoutRepository(
-                Options.Create(new WorkoutOptions { LogFile = tempFile }),
+                Options.Create(new WorkoutOptions { CurrentYearLogFile = tempFile }),
                 TimeProvider.System);
 
             var log = new WorkoutLog(3, 7, "pushups", "20-20-20");

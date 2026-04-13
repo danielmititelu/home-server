@@ -43,17 +43,17 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
             return;
         }
 
-        File.AppendAllLines(_options.LogFile, lines);
+        File.AppendAllLines(_options.CurrentYearLogFile, lines);
     }
 
     public IEnumerable<WorkoutLog> ReadWorkoutLogs()
     {
-        if (!File.Exists(_options.LogFile))
+        if (!File.Exists(_options.CurrentYearLogFile))
         {
             return [];
         }
 
-        return Utils.ParseCsv(File.ReadLines(_options.LogFile), parts =>
+        return Utils.ParseCsv(File.ReadLines(_options.CurrentYearLogFile), parts =>
         {
             if (parts.Length < 4 || !int.TryParse(parts[0], out var month) || !int.TryParse(parts[1], out var day))
             {
@@ -66,6 +66,6 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
 
     public void WriteWorkoutReport(IEnumerable<string> markdownLines)
     {
-        File.WriteAllLines(_options.ReportFile, markdownLines);
+        File.WriteAllLines(_options.CurrentYearReportFile, markdownLines);
     }
 }

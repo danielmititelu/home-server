@@ -2,7 +2,9 @@ namespace Vaultling.Configuration;
 
 public class WorkoutOptions
 {
-    public string LogFile { get; set; } = "";
+    public string LogFileTemplate { get; set; } = "";
+    public string CurrentYearLogFile { get; set; } = "";
     public string ScheduleFile { get; set; } = "";
-    public string ReportFile { get; set; } = "";
+    public string ReportFileTemplate { get; set; } = "";
+    public string CurrentYearReportFile { get; set; } = "";
 }

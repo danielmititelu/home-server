@@ -102,7 +102,7 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
 
     public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)
     {
-        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
+        var reportFile = Utils.ResolveYearPath(_options.ReportFileTemplate, year);
         if (string.IsNullOrEmpty(reportFile))
             return;
 
@@ -175,7 +175,7 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
 
     internal IEnumerable<CalendarOccurrence> ReadReportOccurrences(int year)
     {
-        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
+        var reportFile = Utils.ResolveYearPath(_options.ReportFileTemplate, year);
         if (string.IsNullOrEmpty(reportFile) || !File.Exists(reportFile))
             return [];
 

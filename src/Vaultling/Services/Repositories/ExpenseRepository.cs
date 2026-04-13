@@ -42,7 +42,7 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
 
     public void WriteExpenseReport(IEnumerable<string> markdownLines)
     {
-        File.WriteAllLines(_options.ReportFile, markdownLines);
+        File.WriteAllLines(_options.CurrentYearReportFile, markdownLines);
     }
 
     private static IEnumerable<ExpenseLog> ParseExpenseFile(string file)
