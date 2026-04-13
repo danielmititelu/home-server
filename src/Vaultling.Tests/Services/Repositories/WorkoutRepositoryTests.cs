@@ -30,22 +30,22 @@ public class WorkoutRepositoryTests
     {
         var first = _logs.First();
 
-        Assert.Equal("01", first.Month);
-        Assert.Equal("05", first.Day);
+        Assert.Equal(1, first.Month);
+        Assert.Equal(5, first.Day);
     }
 
     [Fact]
     public void ReadWorkoutLogs_ParsesFieldsCorrectly()
     {
         var first = _logs[0];
-        Assert.Equal("01", first.Month);
-        Assert.Equal("05", first.Day);
+        Assert.Equal(1, first.Month);
+        Assert.Equal(5, first.Day);
         Assert.Equal("pushups", first.Type);
         Assert.Equal("20-20-20", first.Reps);
 
         var last = _logs[2];
-        Assert.Equal("02", last.Month);
-        Assert.Equal("10", last.Day);
+        Assert.Equal(2, last.Month);
+        Assert.Equal(10, last.Day);
         Assert.Equal("pullups", last.Type);
         Assert.Equal("10-10-10", last.Reps);
     }
@@ -62,7 +62,7 @@ public class WorkoutRepositoryTests
                 Options.Create(new WorkoutOptions { LogFile = tempFile }),
                 TimeProvider.System);
 
-            var log = new WorkoutLog("03", "07", "pushups", "20-20-20");
+            var log = new WorkoutLog(3, 7, "pushups", "20-20-20");
             repository.AppendWorkout([log]);
 
             var reparsed = repository.ReadWorkoutLogs().Single();

@@ -12,18 +12,12 @@ public class WorkoutService(WorkoutRepository workoutRepository, TimeProvider ti
 
         // Group workouts by month and day, counting occurrences
         var months = logs
-            .Where(l =>
-            {
-                if (int.TryParse(l.Month, out _) && int.TryParse(l.Day, out _)) return true;
-                Console.Error.WriteLine($"[WorkoutService] Skipping malformed log row: Month='{l.Month}' Day='{l.Day}'");
-                return false;
-            })
-            .GroupBy(l => new { Month = int.Parse(l.Month), Year = currentYear })
+            .GroupBy(l => new { l.Month, Year = currentYear })
             .OrderBy(g => g.Key.Month)
             .Select(monthGroup =>
             {
                 var dayWorkoutCounts = monthGroup
-                    .GroupBy(l => int.Parse(l.Day))
+                    .GroupBy(l => l.Day)
                     .ToDictionary(
                         dayGroup => dayGroup.Key,
                         dayGroup => dayGroup.Count()

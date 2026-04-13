@@ -6,4 +6,4 @@ public record MonthlyWorkoutSummary(
     Dictionary<int, int> DayWorkoutCounts
 );
 
-public record WorkoutLog(string Month, string Day, string Type, string Reps);
+public record WorkoutLog(int Month, int Day, string Type, string Reps);

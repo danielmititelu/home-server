@@ -44,6 +44,6 @@ public class DailyEntryTests
         Assert.Equal(first.Workouts.ToList(), second.Workouts.ToList());
         Assert.Equal(first.Todos.ToList(), second.Todos.ToList());
         Assert.Equal(first.Expenses.ToList(), second.Expenses.ToList());
-        Assert.Equal(first.CalendarEvents.ToList(), second.CalendarEvents.ToList());
+        Assert.Equal(first.CalendarEvents?.ToList(), second.CalendarEvents?.ToList());
     }
 }

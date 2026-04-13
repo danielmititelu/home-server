@@ -24,8 +24,8 @@ public class DailyEntryService(
         workoutRepository.AppendWorkout(yesterdayEntry.Workouts
             .Where(w => !string.IsNullOrWhiteSpace(w.Reps))
             .Select(w => new WorkoutLog(
-                Month: yesterdayEntry.Date.Month.ToString("00"),
-                Day: yesterdayEntry.Date.Day.ToString("00"),
+                Month: yesterdayEntry.Date.Month,
+                Day: yesterdayEntry.Date.Day,
                 Type: w.Exercise,
                 Reps: w.Reps
             )));

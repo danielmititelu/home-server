@@ -35,7 +35,7 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
     public void AppendWorkout(IEnumerable<WorkoutLog> logs)
     {
         var lines = logs
-            .Select(log => $"{log.Month},{log.Day},{log.Type},{log.Reps}")
+            .Select(log => $"{log.Month:00},{log.Day:00},{log.Type},{log.Reps}")
             .ToList();
 
         if (lines.Count == 0)
@@ -53,12 +53,15 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
             return [];
         }
 
-        return Utils.ParseCsv(File.ReadLines(_options.LogFile), parts => new WorkoutLog(
-            Month: parts[0],
-            Day: parts[1],
-            Type: parts[2],
-            Reps: parts[3]
-        ));
+        return Utils.ParseCsv(File.ReadLines(_options.LogFile), parts =>
+        {
+            if (parts.Length < 4 || !int.TryParse(parts[0], out var month) || !int.TryParse(parts[1], out var day))
+            {
+                Console.Error.WriteLine($"[WorkoutRepository] Skipping malformed log row: '{string.Join(",", parts)}'");
+                return null;
+            }
+            return new WorkoutLog(Month: month, Day: day, Type: parts[2], Reps: parts[3]);
+        }).OfType<WorkoutLog>();
     }
 
     public void WriteWorkoutReport(IEnumerable<string> markdownLines)

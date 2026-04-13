@@ -79,8 +79,8 @@ public class DailyEntryServiceTests
                 .ReadWorkoutLogs().ToList();
 
             Assert.Equal(2, workouts.Count);
-            Assert.Equal("03", workouts[0].Month);
-            Assert.Equal("07", workouts[0].Day);
+            Assert.Equal(3, workouts[0].Month);
+            Assert.Equal(7, workouts[0].Day);
             Assert.Equal("pushups", workouts[0].Type);
             Assert.Equal("20-20-20", workouts[0].Reps);
 
