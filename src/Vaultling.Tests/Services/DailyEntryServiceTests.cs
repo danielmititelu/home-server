@@ -136,6 +136,7 @@ public class DailyEntryServiceTests
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry);
 
+        var expectedCalendarLink = Utils.Utils.GetCalendarReportMonthLink(entryDate.DateTime);
         Assert.Contains(expectedCalendarLink, markdown);
         Assert.Contains("Azi la 18:00: Piano lesson", markdown);
         Assert.Contains("Mâine la 20:00: Movie night", markdown);
