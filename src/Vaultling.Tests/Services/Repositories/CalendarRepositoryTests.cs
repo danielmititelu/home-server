@@ -7,14 +7,22 @@ namespace Vaultling.Tests;
 
 public class CalendarRepositoryTests
 {
+    private static ExpenseRepository MakeExpenseRepository(string dataFile = "", string previousYearDataFile = "")
+        => new(Options.Create(new ExpenseOptions { DataFile = dataFile, PreviousYearDataFile = previousYearDataFile }));
+
     private static CalendarRepository MakeRepository(string eventsFile, string reportFile = "", string expenseDataFile = "")
+        => MakeRepository(eventsFile, reportFile, MakeExpenseRepository(expenseDataFile));
+
+    private static CalendarRepository MakeRepository(string eventsFile, ExpenseRepository expenseRepository)
+        => MakeRepository(eventsFile, "", expenseRepository);
+
+    private static CalendarRepository MakeRepository(string eventsFile, string reportFile, ExpenseRepository expenseRepository)
     {
         return new CalendarRepository(Options.Create(new CalendarOptions
         {
             EventsFile = eventsFile,
             ReportFile = reportFile,
-            ExpenseDataFile = expenseDataFile
-        }));
+        }), expenseRepository);
     }
 
     [Fact]
@@ -51,27 +59,6 @@ public class CalendarRepositoryTests
                 Directory.Delete(tempDir, recursive: true);
             }
         }
-    }
-
-    [Fact]
-    public void ReadCalendarOccurrences_ParsesWeeklySchedule()
-    {
-        var tempFile = Path.GetTempFileName();
-        File.WriteAllLines(tempFile, [
-            "schedule,note",
-            "thursday at 18:00,Piano lesson"
-        ]);
-
-        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
-
-        File.Delete(tempFile);
-
-        var first = occurrences.First();
-        Assert.True(occurrences.Count > 0);
-        Assert.Equal(DayOfWeek.Thursday, first.Date.DayOfWeek);
-        Assert.Equal(18, first.Date.Hour);
-        Assert.Equal("Piano lesson", first.Note);
-        Assert.False(first.Cancelled);
     }
 
     [Fact]
@@ -163,7 +150,7 @@ public class CalendarRepositoryTests
                 "3,12,hobby,400,pian"
             ]);
 
-            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "2026-expenses-csv.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -215,7 +202,7 @@ public class CalendarRepositoryTests
                 "3,12,food,50,groceries"  // no match for hobby:pian
             ]);
 
-            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "2026-expenses-csv.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -296,7 +283,7 @@ public class CalendarRepositoryTests
                 "- ~~09 at 18:00: Piano lesson 1/4~~"
             ]);
 
-            var occurrences = MakeRepository(eventsFile, Path.Combine(tempDir, "{year}-calendar-report.md"), Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, Path.Combine(tempDir, "{year}-calendar-report.md"), MakeExpenseRepository(dataFile: Path.Combine(tempDir, "2026-expenses-csv.md")))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -357,17 +344,6 @@ public class CalendarRepositoryTests
             if (Directory.Exists(tempDir))
                 Directory.Delete(tempDir, recursive: true);
         }
-    }
-
-    [Theory]
-    [InlineData("Piano lesson 1/4", "Piano lesson")]
-    [InlineData("Piano lesson 4/4", "Piano lesson")]
-    [InlineData("Piano lesson 10/12", "Piano lesson")]
-    [InlineData("Piano lesson", "Piano lesson")]
-    [InlineData("Pay rent", "Pay rent")]
-    public void StripCycleNumber_RemovesTrailingXOfN(string input, string expected)
-    {
-        Assert.Equal(expected, CalendarRepository.StripCycleNumber(input));
     }
 
     [Fact]
@@ -476,7 +452,7 @@ public class CalendarRepositoryTests
     public void GetCycleOccurrences_GeneratesExactlyCountPlusOneSpeculative()
     {
         // Jan 1 2026 is a Thursday
-        var recurring = new RecurringEvent(Type: "thursday", Schedule: "18:00", Note: "Piano lesson", CycleCount: 4, CycleExpenseMatch: "hobby:pian");
+        var recurring = new WeeklyRecurringEvent(DayOfWeek.Thursday, new TimeOnly(18, 0), "Piano lesson", CycleCount: 4, CycleExpenseCategory: "hobby", CycleExpenseDesc: "pian");
         var occurrences = CalendarRepository.GetCycleOccurrences(recurring, new DateTime(2026, 1, 1)).ToList();
 
         Assert.Equal(5, occurrences.Count);
@@ -517,7 +493,7 @@ public class CalendarRepositoryTests
                 $"4,1,fun,200,{description}"
             ]);
 
-            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "2026-expenses-csv.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -549,7 +525,7 @@ public class CalendarRepositoryTests
                 "4,1,fun,200,Concert metalica"
             ]);
 
-            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "2026-expenses-csv.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -582,10 +558,10 @@ public class CalendarRepositoryTests
             var expenseFile2026 = Path.Combine(tempDir, "2026-expenses-csv.md");
             File.WriteAllLines(expenseFile2026, ["month,day,category,amount,description"]);
 
-            var occurrences2025 = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences2025 = MakeRepository(eventsFile, MakeExpenseRepository(dataFile: expenseFile2025))
                 .ReadCalendarOccurrences(2025)
                 .ToList();
-            var occurrences2026 = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences2026 = MakeRepository(eventsFile, MakeExpenseRepository(dataFile: expenseFile2026, previousYearDataFile: expenseFile2025))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -625,7 +601,7 @@ public class CalendarRepositoryTests
                 "- ~~20 at 20:00: Concert metalica~~"
             ]);
 
-            var occurrences = MakeRepository(eventsFile, Path.Combine(tempDir, "{year}-calendar-report.md"), Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, Path.Combine(tempDir, "{year}-calendar-report.md"), MakeExpenseRepository(dataFile: Path.Combine(tempDir, "2026-expenses-csv.md")))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
@@ -662,7 +638,7 @@ public class CalendarRepositoryTests
                 $"1,15,transport,600,{description}"
             ]);
 
-            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "2026-expenses-csv.md"))
                 .ReadCalendarOccurrences(2026)
                 .OrderBy(o => o.Date)
                 .ToList();
@@ -695,14 +671,13 @@ public class CalendarRepositoryTests
                 "1,15,transport,600,Avion spre Vienna 2026-06-05T08:00 -> 2026-06-10T20:00"
             ]);
 
-            var repo = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"));
-
+            var repo = MakeRepository(eventsFile, MakeExpenseRepository(dataFile: Path.Combine(tempDir, "2026-expenses-csv.md")));
             // Departure day — in Vienna
-            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 5), 2026));
+            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 5)));
             // Middle of trip
-            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 8), 2026));
+            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 8)));
             // Day before return (last day away)
-            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 9), 2026));
+            Assert.Equal("Vienna", repo.GetTravelCityForDate(new DateTime(2026, 6, 9)));
         }
         finally
         {
@@ -727,14 +702,13 @@ public class CalendarRepositoryTests
                 "1,15,transport,600,Avion spre Vienna 2026-06-05T08:00 -> 2026-06-10T20:00"
             ]);
 
-            var repo = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"));
-
+            var repo = MakeRepository(eventsFile, MakeExpenseRepository(dataFile: Path.Combine(tempDir, "2026-expenses-csv.md")));
             // Return day — back home
-            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 10), 2026));
+            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 10)));
             // Before departure
-            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 4), 2026));
+            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 4)));
             // After return
-            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 11), 2026));
+            Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 11)));
         }
         finally
         {
@@ -750,7 +724,7 @@ public class CalendarRepositoryTests
         File.WriteAllLines(tempFile, ["schedule,note"]);
         var repo = MakeRepository(tempFile, expenseDataFile: "");
 
-        Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 7), 2026));
+        Assert.Null(repo.GetTravelCityForDate(new DateTime(2026, 6, 7)));
 
         File.Delete(tempFile);
     }

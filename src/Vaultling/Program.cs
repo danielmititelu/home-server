@@ -22,6 +22,7 @@ services.PostConfigure<WorkoutOptions>(opts =>
 });
 services.PostConfigure<ExpenseOptions>(opts =>
 {
+    opts.PreviousYearDataFile = Utils.ResolveYearPath(opts.DataFile, currentYear - 1);
     opts.DataFile = Utils.ResolveYearPath(opts.DataFile, currentYear);
     opts.ReportFile = Utils.ResolveYearPath(opts.ReportFile, currentYear);
 });

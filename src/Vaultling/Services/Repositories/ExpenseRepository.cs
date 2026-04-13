@@ -7,15 +7,29 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
     private readonly ExpenseOptions _options = options.Value;
 
     public IEnumerable<ExpenseLog> ReadExpenses()
+        => ParseExpenseFile(_options.DataFile);
+
+    public IEnumerable<ExpenseLog> ReadRecentExpenses()
     {
-        return Utils.ParseCsv(File.ReadLines(_options.DataFile), parts => new ExpenseLog(
+        var previous = string.IsNullOrEmpty(_options.PreviousYearDataFile) ? [] : ParseExpenseFile(_options.PreviousYearDataFile);
+        return previous.Concat(ReadExpenses());
+    }
+
+    public ExpenseLog? FindLatestExpense(string category, string descriptionContains)
+        => ReadRecentExpenses()
+            .Where(e =>
+                e.Category.Contains(category, StringComparison.OrdinalIgnoreCase) &&
+                e.Description.Contains(descriptionContains, StringComparison.OrdinalIgnoreCase))
+            .MaxBy(e => (e.Month, e.Day));
+
+    private static IEnumerable<ExpenseLog> ParseExpenseFile(string file)
+        => !File.Exists(file) ? [] : Utils.ParseCsv(File.ReadLines(file), parts => new ExpenseLog(
             Month: int.Parse(parts[0]),
             Day: int.Parse(parts[1]),
             Category: parts[2].ToLower(),
             Amount: decimal.Parse(parts[3]),
             Description: parts[4]
         ));
-    }
 
     public void AppendExpenses(IEnumerable<ExpenseLog> expenses)
     {

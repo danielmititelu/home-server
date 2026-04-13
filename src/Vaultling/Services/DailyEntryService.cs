@@ -48,7 +48,7 @@ public class DailyEntryService(
         var calendarEvents = calendarRepository.ReadCalendarOccurrences(currentYear);
         
         var city = yesterdayEntry.City;
-        var travelCity = calendarRepository.GetTravelCityForDate(timeProvider.GetLocalNow().Date, currentYear);
+        var travelCity = calendarRepository.GetTravelCityForDate(timeProvider.GetLocalNow().Date);
         var weather = await weatherRepository.FetchWeatherAsync(travelCity ?? city);
 
         var newTodayEntry = new DailyEntry(

@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Vaultling.Utils;
 
-public partial class CalendarRepository(IOptions<CalendarOptions> options)
+public partial class CalendarRepository(IOptions<CalendarOptions> options, ExpenseRepository expenseRepository)
 {
     [GeneratedRegex(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled)]
     private static partial Regex DateInDescriptionRegex();
@@ -15,13 +15,16 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
     [GeneratedRegex(@"\s+\b(?:pe|at|on|in|la|spre|to)\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "")]
     private static partial Regex ConnectorWordRegex();
 
-    private readonly CalendarOptions _options = options.Value;
-    private static readonly string[] MonthNames = [.. CultureInfo.InvariantCulture.DateTimeFormat.MonthNames
-        .Where(m => !string.IsNullOrEmpty(m))
-        .Select(m => m.ToLowerInvariant())];
+    [GeneratedRegex(@" \d+/\d+$")]
+    private static partial Regex CycleNumberRegex();
 
-    private static readonly string[] DayNames = [.. CultureInfo.InvariantCulture.DateTimeFormat.DayNames
-        .Select(d => d.ToLowerInvariant())];
+    private readonly CalendarOptions _options = options.Value;
+    private readonly ExpenseRepository _expenseRepository = expenseRepository;
+
+    private static readonly Dictionary<string, DayOfWeek> DayNameToWeekday =
+        Enum.GetValues<DayOfWeek>().ToDictionary(
+            d => d.ToString().ToLowerInvariant(),
+            d => d);
 
     public IEnumerable<CalendarOccurrence> ReadCalendarOccurrences(int year)
     {
@@ -33,26 +36,31 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
                 var schedule = parts[0].Trim().ToLowerInvariant();
                 var note = parts[1].Trim();
                 var cycleCount = parts.Length > 2 && int.TryParse(parts[2].Trim(), out var cc) ? cc : (int?)null;
-                var cycleExpenseMatch = parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]) ? parts[3].Trim() : null;
-                return ParseRecurringSchedule(schedule, note, cycleCount, cycleExpenseMatch);
-            }, maxColumnSplit: 4).ToList()
+                string? cycleExpenseCategory = null, cycleExpenseDesc = null;
+                if (parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]))
+                {
+                    var raw = parts[3].Trim();
+                    var colonIdx = raw.IndexOf(':', StringComparison.Ordinal);
+                    cycleExpenseCategory = colonIdx >= 0 ? raw[..colonIdx].Trim() : raw;
+                    cycleExpenseDesc = colonIdx >= 0 ? raw[(colonIdx + 1)..].Trim() : "";
+                }
+                return ParseRecurringSchedule(schedule, note, cycleCount, cycleExpenseCategory, cycleExpenseDesc);
+            }, maxColumnSplit: 4).OfType<RecurringEvent>().ToList()
             : [];
 
-        var yearFrom = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var yearTo = new DateTimeOffset(year, 12, 31, 23, 59, 59, TimeSpan.Zero);
+        var regularOccurrences = recurringEvents
+            .OfType<YearlyRecurringEvent>()
+            .Select(e => new CalendarOccurrence(new DateTime(year, e.Month, e.Day), e.Note));
 
-        var regularEvents = recurringEvents.Where(e => e.CycleCount == null || e.CycleExpenseMatch == null);
-        var cycleEvents = recurringEvents.Where(e => e.CycleCount.HasValue && e.CycleExpenseMatch != null);
-
-        var regularOccurrences = regularEvents
-            .SelectMany(e => GetOccurrences(e, yearFrom, yearTo));
-
-        var cycleOccurrences = cycleEvents
-            .SelectMany(e =>
+        var cycleOccurrences = recurringEvents
+            .OfType<WeeklyRecurringEvent>()
+            .Where(e => e.CycleCount.HasValue && e.CycleExpenseCategory != null)
+            .Select(e => (Event: e, Category: e.CycleExpenseCategory!, Desc: e.CycleExpenseDesc ?? ""))
+            .SelectMany(t =>
             {
-                var expenseDate = FindLatestMatchingExpense(e.CycleExpenseMatch!, year);
+                var expenseDate = FindLatestMatchingExpense(t.Category, t.Desc, year);
                 if (expenseDate == null) return [];
-                return GetCycleOccurrences(e, expenseDate.Value)
+                return GetCycleOccurrences(t.Event, expenseDate.Value)
                     .Where(o => o.Date.Year == year);
             });
 
@@ -65,87 +73,69 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
 
     internal IEnumerable<CalendarOccurrence> ReadExpenseEvents(int year)
     {
-        foreach (var checkYear in new[] { year - 1, year })
+        foreach (var expense in _expenseRepository.ReadRecentExpenses())
         {
-            var expenseFile = Utils.ResolveYearPath(_options.ExpenseDataFile, checkYear);
-            if (string.IsNullOrEmpty(expenseFile) || !File.Exists(expenseFile))
-                continue;
+            var description = expense.Description.Trim();
 
-            foreach (var parts in Utils.ParseCsv(File.ReadLines(expenseFile),
-                p => p, maxColumnSplit: 5))
+            // Range match (departure -> return) takes priority
+            var rangeMatch = RangeDateInDescriptionRegex().Match(description);
+            if (rangeMatch.Success)
             {
-                if (parts.Length < 5) continue;
-                var description = parts[4].Trim();
-
-                // Range match (departure -> return) takes priority
-                var rangeMatch = RangeDateInDescriptionRegex().Match(description);
-                if (rangeMatch.Success)
-                {
-                    var notePart = ExtractNote(description, rangeMatch.Index);
-                    if (string.IsNullOrEmpty(notePart)) continue;
-
-                    if (DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate)
-                        && depDate.Year == year)
-                        yield return new CalendarOccurrence(depDate, notePart);
-
-                    if (DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate)
-                        && retDate.Year == year)
-                        yield return new CalendarOccurrence(retDate, notePart);
-
-                    continue;
-                }
-
-                // Single date
-                var match = DateInDescriptionRegex().Match(description);
-                if (!match.Success) continue;
-
-                var dateStr = match.Groups[1].Value;
-                var hasTime = dateStr.Length > 10;
-                if (!DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var eventDate))
-                    continue;
-
-                if (eventDate.Year != year) continue;
-
-                var note = ExtractNote(description, match.Index);
-                if (string.IsNullOrEmpty(note)) continue;
-
-                yield return new CalendarOccurrence(hasTime ? eventDate : eventDate.Date, note);
-            }
-        }
-    }
-
-    internal string? GetTravelCityForDate(DateTime date, int year)
-    {
-        foreach (var checkYear in new[] { year - 1, year })
-        {
-            var expenseFile = Utils.ResolveYearPath(_options.ExpenseDataFile, checkYear);
-            if (string.IsNullOrEmpty(expenseFile) || !File.Exists(expenseFile))
-                continue;
-
-            foreach (var parts in Utils.ParseCsv(File.ReadLines(expenseFile),
-                p => p, maxColumnSplit: 5))
-            {
-                if (parts.Length < 5) continue;
-                var description = parts[4].Trim();
-
-                var rangeMatch = RangeDateInDescriptionRegex().Match(description);
-                if (!rangeMatch.Success) continue;
-
-                if (!DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate))
-                    continue;
-                if (!DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate))
-                    continue;
-
-                if (date.Date < depDate.Date || date.Date >= retDate.Date) continue;
-
                 var notePart = ExtractNote(description, rangeMatch.Index);
                 if (string.IsNullOrEmpty(notePart)) continue;
 
-                var words = notePart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (words.Length == 0) continue;
+                if (DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate)
+                    && depDate.Year == year)
+                    yield return new CalendarOccurrence(depDate, notePart);
 
-                return words[^1];
+                if (DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate)
+                    && retDate.Year == year)
+                    yield return new CalendarOccurrence(retDate, notePart);
+
+                continue;
             }
+
+            // Single date
+            var match = DateInDescriptionRegex().Match(description);
+            if (!match.Success) continue;
+
+            var dateStr = match.Groups[1].Value;
+            var hasTime = dateStr.Length > 10;
+            if (!DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var eventDate))
+                continue;
+
+            if (eventDate.Year != year) continue;
+
+            var note = ExtractNote(description, match.Index);
+            if (string.IsNullOrEmpty(note)) continue;
+
+            yield return new CalendarOccurrence(hasTime ? eventDate : eventDate.Date, note);
+        }
+    }
+
+    internal string? GetTravelCityForDate(DateTime date)
+    {
+        foreach (var expense in _expenseRepository.ReadRecentExpenses())
+        {
+            var description = expense.Description.Trim();
+
+            var rangeMatch = RangeDateInDescriptionRegex().Match(description);
+            if (!rangeMatch.Success) continue;
+
+            if (!DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate))
+                continue;
+            if (!DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate))
+                continue;
+
+            if (date.Date < depDate.Date || date.Date >= retDate.Date) continue;
+
+            var notePart = ExtractNote(description, rangeMatch.Index);
+            if (string.IsNullOrEmpty(notePart)) continue;
+
+            var words = notePart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) continue;
+
+            return words[^1];
         }
 
         return null;
@@ -157,57 +147,24 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
         return ConnectorWordRegex().Replace(notePart, "").Trim();
     }
 
-    internal DateTime? FindLatestMatchingExpense(string cycleExpenseMatch, int year)
+    internal DateTime? FindLatestMatchingExpense(string category, string desc, int year)
     {
-        var dates = new List<DateTime>();
-        foreach (var checkYear in new[] { year - 1, year })
-        {
-            var expenseFile = Utils.ResolveYearPath(_options.ExpenseDataFile, checkYear);
-            if (string.IsNullOrEmpty(expenseFile) || !File.Exists(expenseFile))
-                continue;
-
-            dates.AddRange(ReadMatchingExpenseDates(expenseFile, cycleExpenseMatch, checkYear));
-        }
-
-        return dates.Count > 0 ? dates.Max() : null;
+        var expense = _expenseRepository.FindLatestExpense(category, desc);
+        return expense == null ? null : new DateTime(year, expense.Month, expense.Day);
     }
 
-    private static IEnumerable<DateTime> ReadMatchingExpenseDates(string expenseFile, string cycleExpenseMatch, int year)
+    internal static IEnumerable<CalendarOccurrence> GetCycleOccurrences(WeeklyRecurringEvent weekly, DateTime expenseDate)
     {
-        var colonIdx = cycleExpenseMatch.IndexOf(':', StringComparison.Ordinal);
-        var categoryMatch = colonIdx >= 0 ? cycleExpenseMatch[..colonIdx].Trim() : cycleExpenseMatch.Trim();
-        var descMatch = colonIdx >= 0 ? cycleExpenseMatch[(colonIdx + 1)..].Trim() : "";
+        var count = weekly.CycleCount!.Value;
+        var current = expenseDate.Date;
+        while (current.DayOfWeek != weekly.Day)
+            current = current.AddDays(1);
 
-        return Utils.ParseCsv(File.ReadLines(expenseFile), parts =>
-        {
-            if (parts.Length < 5) return (DateTime?)null;
-            if (!int.TryParse(parts[0].Trim(), out var month) || !int.TryParse(parts[1].Trim(), out var day))
-                return (DateTime?)null;
-
-            var category = parts[2].Trim();
-            var description = parts[4].Trim();
-
-            var categoryOk = string.IsNullOrEmpty(categoryMatch) ||
-                category.Contains(categoryMatch, StringComparison.OrdinalIgnoreCase);
-            var descOk = string.IsNullOrEmpty(descMatch) ||
-                description.Contains(descMatch, StringComparison.OrdinalIgnoreCase);
-
-            return (categoryOk && descOk) ? new DateTime(year, month, day) : (DateTime?)null;
-        }, maxColumnSplit: 5).OfType<DateTime>();
-    }
-
-    internal static IEnumerable<CalendarOccurrence> GetCycleOccurrences(RecurringEvent recurring, DateTime expenseDate)
-    {
-        var count = recurring.CycleCount!.Value;
-        var from = new DateTimeOffset(expenseDate, TimeSpan.Zero);
-        var farFuture = new DateTimeOffset(expenseDate.Year + 2, 12, 31, 23, 59, 59, TimeSpan.Zero);
-
-        var occurrences = GetOccurrences(recurring, from, farFuture).Take(count + 1).ToList();
-
-        for (var i = 0; i < occurrences.Count; i++)
+        for (var i = 0; i <= count; i++)
         {
             var number = (i == count) ? 1 : i + 1; // last one is the speculative 1/N
-            yield return occurrences[i] with { Note = $"{occurrences[i].Note} {number}/{count}" };
+            yield return new CalendarOccurrence(current.Add(weekly.Time.ToTimeSpan()), $"{weekly.Note} {number}/{count}");
+            current = current.AddDays(7);
         }
     }
 
@@ -290,67 +247,26 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
         File.WriteAllLines(reportFile, markdownLines);
     }
 
-    internal static IEnumerable<CalendarOccurrence> GetOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
+    private static RecurringEvent? ParseRecurringSchedule(string schedule, string note, int? cycleCount = null, string? cycleExpenseCategory = null, string? cycleExpenseDesc = null)
     {
-        var type = recurring.Type.ToLowerInvariant();
-
-        if (Array.Exists(MonthNames, m => m == type))
-            return GetYearlyOccurrences(recurring, from, to);
-
-        if (Array.Exists(DayNames, d => d == type))
-            return GetWeeklyOccurrences(recurring, from, to);
-
-        return [];
+        return schedule switch
+        {
+            _ when schedule.Split(" at ", 2) is [var dayName, var time]
+                && DayNameToWeekday.TryGetValue(dayName.Trim(), out var weekday) =>
+                new WeeklyRecurringEvent(weekday, TimeOnly.Parse(time.Trim()), note, CycleCount: cycleCount, CycleExpenseCategory: cycleExpenseCategory, CycleExpenseDesc: cycleExpenseDesc),
+            _ when schedule.Split('-') is [var monthStr, var dayStr]
+                && int.TryParse(monthStr, out var monthNum)
+                && monthNum >= 1 && monthNum <= 12
+                && int.TryParse(dayStr, out var dayNum) =>
+                new YearlyRecurringEvent(monthNum, dayNum, note),
+            _ => LogAndReturnNull(schedule, note)
+        };
     }
 
-    private static RecurringEvent ParseRecurringSchedule(string schedule, string note, int? cycleCount = null, string? cycleExpenseMatch = null)
+    private static RecurringEvent? LogAndReturnNull(string schedule, string note)
     {
-        var atIndex = schedule.IndexOf(" at ", StringComparison.Ordinal);
-        if (atIndex >= 0)
-        {
-            var dayName = schedule[..atIndex].Trim();
-            var time = schedule[(atIndex + 4)..].Trim();
-            if (Array.Exists(DayNames, d => d == dayName))
-                return new RecurringEvent(Type: dayName, Schedule: time, Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
-        }
-
-        if (schedule.Length >= 5 && schedule[2] == '-')
-        {
-            var month = int.Parse(schedule[..2]);
-            var day = schedule[3..];
-            return new RecurringEvent(Type: MonthNames[month - 1], Schedule: day, Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
-        }
-
-        return new RecurringEvent(Type: schedule, Schedule: "", Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
-    }
-
-    private static IEnumerable<CalendarOccurrence> GetYearlyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
-    {
-        var monthIndex = Array.FindIndex(MonthNames, m => m.Equals(recurring.Type, StringComparison.InvariantCultureIgnoreCase)) + 1;
-        var day = int.Parse(recurring.Schedule);
-
-        for (var year = from.Year; year <= to.Year; year++)
-        {
-            var dt = new DateTime(year, monthIndex, day);
-            if (dt >= from.Date && dt <= to.Date)
-                yield return new CalendarOccurrence(dt, recurring.Note);
-        }
-    }
-
-    private static IEnumerable<CalendarOccurrence> GetWeeklyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
-    {
-        var targetDay = (DayOfWeek)Array.FindIndex(DayNames, d => d.Equals(recurring.Type, StringComparison.InvariantCultureIgnoreCase));
-        var timeParts = recurring.Schedule.Split(':');
-        var hour = int.Parse(timeParts[0]);
-        var minute = int.Parse(timeParts[1]);
-
-        var current = from.Date;
-        while (current <= to.Date)
-        {
-            if (current.DayOfWeek == targetDay)
-                yield return new CalendarOccurrence(current.Add(new TimeSpan(hour, minute, 0)), recurring.Note);
-            current = current.AddDays(1);
-        }
+        Console.Error.WriteLine($"[CalendarRepository] Unrecognised schedule format — schedule: '{schedule}', note: '{note}'");
+        return null;
     }
 
     private static IEnumerable<CalendarOccurrence> MergeOccurrences(
@@ -365,13 +281,8 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
             .GroupBy(o => new
             {
                 o.Date,
-                Note = StripCycleNumber(o.Note).ToLowerInvariant()
+                Note = CycleNumberRegex().Replace(o.Note.Trim(), "").ToLowerInvariant()
             })
             .Select(g => g.FirstOrDefault(o => o.Cancelled) ?? g.Last());
-    }
-
-    internal static string StripCycleNumber(string note)
-    {
-        return Regex.Replace(note.Trim(), @" \d+/\d+$", "");
     }
 }
