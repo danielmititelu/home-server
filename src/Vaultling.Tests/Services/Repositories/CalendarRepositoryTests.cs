@@ -75,25 +75,6 @@ public class CalendarRepositoryTests
     }
 
     [Fact]
-    public void ReadCalendarOccurrences_ParsesMonthlySchedule()
-    {
-        var tempFile = Path.GetTempFileName();
-        File.WriteAllLines(tempFile, [
-            "schedule,note",
-            "monthly 15,Pay rent"
-        ]);
-
-        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
-
-        File.Delete(tempFile);
-
-        Assert.Equal(12, occurrences.Count);
-        Assert.All(occurrences, o => Assert.Equal(15, o.Date.Day));
-        Assert.All(occurrences, o => Assert.Equal("Pay rent", o.Note));
-        Assert.All(occurrences, o => Assert.False(o.Cancelled));
-    }
-
-    [Fact]
     public void ReadCalendarOccurrences_ParsesYearlyMonthDaySchedule()
     {
         var tempFile = Path.GetTempFileName();
@@ -110,33 +91,6 @@ public class CalendarRepositoryTests
         Assert.Equal(new DateTime(2026, 3, 15), only.Date);
         Assert.Equal("Doctor appointment", only.Note);
         Assert.False(only.Cancelled);
-    }
-
-    [Fact]
-    public void GetOccurrences_MonthlySkipsInvalidDates()
-    {
-        var lines = new[]
-        {
-            "schedule,note",
-            "monthly 31,Month end"
-        };
-
-        var tempFile = Path.GetTempFileName();
-        File.WriteAllLines(tempFile, lines);
-        var occurrences = MakeRepository(tempFile).ReadCalendarOccurrences(2026).ToList();
-
-        File.Delete(tempFile);
-
-        var from = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        var to = new DateTimeOffset(2026, 3, 31, 23, 59, 59, TimeSpan.Zero);
-
-        var bounded = occurrences
-            .Where(o => o.Date >= from.Date && o.Date <= to.Date)
-            .ToList();
-
-        Assert.Equal(2, bounded.Count);
-        Assert.Equal(new DateTime(2026, 1, 31), bounded[0].Date);
-        Assert.Equal(new DateTime(2026, 3, 31), bounded[1].Date);
     }
 
     [Fact]
@@ -252,8 +206,7 @@ public class CalendarRepositoryTests
             var eventsFile = Path.Combine(tempDir, "events-csv.md");
             File.WriteAllLines(eventsFile, [
                 "schedule,note,cycle-count,cycle-expense",
-                "thursday at 18:00,Piano lesson,4,hobby:pian",
-                "monthly 15,Pay rent"
+                "thursday at 18:00,Piano lesson,4,hobby:pian"
             ]);
 
             var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
@@ -266,9 +219,8 @@ public class CalendarRepositoryTests
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
-            // No piano lessons; only monthly Pay rent events
-            Assert.DoesNotContain(occurrences, o => o.Note.Contains("Piano"));
-            Assert.Equal(12, occurrences.Count(o => o.Note == "Pay rent"));
+            // No piano lessons when expense doesn't match
+            Assert.Empty(occurrences);
         }
         finally
         {

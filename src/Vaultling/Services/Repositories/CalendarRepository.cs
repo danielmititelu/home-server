@@ -294,9 +294,6 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
     {
         var type = recurring.Type.ToLowerInvariant();
 
-        if (type == "monthly")
-            return GetMonthlyOccurrences(recurring, from, to);
-
         if (Array.Exists(MonthNames, m => m == type))
             return GetYearlyOccurrences(recurring, from, to);
 
@@ -316,9 +313,6 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
             if (Array.Exists(DayNames, d => d == dayName))
                 return new RecurringEvent(Type: dayName, Schedule: time, Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
         }
-
-        if (schedule.StartsWith("monthly ", StringComparison.Ordinal))
-            return new RecurringEvent(Type: "monthly", Schedule: schedule[8..].Trim(), Note: note, CycleCount: cycleCount, CycleExpenseMatch: cycleExpenseMatch);
 
         if (schedule.Length >= 5 && schedule[2] == '-')
         {
@@ -356,27 +350,6 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options)
             if (current.DayOfWeek == targetDay)
                 yield return new CalendarOccurrence(current.Add(new TimeSpan(hour, minute, 0)), recurring.Note);
             current = current.AddDays(1);
-        }
-    }
-
-    private static IEnumerable<CalendarOccurrence> GetMonthlyOccurrences(RecurringEvent recurring, DateTimeOffset from, DateTimeOffset to)
-    {
-        var day = int.Parse(recurring.Schedule);
-
-        var current = new DateTime(from.Year, from.Month, 1);
-        var end = new DateTime(to.Year, to.Month, 1).AddMonths(1);
-
-        while (current < end)
-        {
-            var daysInMonth = DateTime.DaysInMonth(current.Year, current.Month);
-            if (day <= daysInMonth)
-            {
-                var dt = new DateTime(current.Year, current.Month, day);
-                if (dt >= from.Date && dt <= to.Date)
-                    yield return new CalendarOccurrence(dt, recurring.Note);
-            }
-
-            current = current.AddMonths(1);
         }
     }
 
