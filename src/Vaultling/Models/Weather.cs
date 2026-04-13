@@ -37,7 +37,7 @@ public static class WmoWeatherCode
         if (Codes.TryGetValue(code, out var result))
             return result;
         // WMO codes are sometimes reported as the nearest even tens boundary
-        var rounded = (code / 10) * 10;
+        var rounded = code / 10 * 10;
         return Codes.TryGetValue(rounded, out var fallback) ? fallback : ("🌡️", "Unknown");
     }
 }

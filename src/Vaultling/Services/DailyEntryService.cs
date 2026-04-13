@@ -28,6 +28,7 @@ public class DailyEntryService(
                 Type: w.Exercise,
                 Reps: w.Reps
             )));
+
         expenseRepository.AppendExpenses(yesterdayEntry.Expenses
             .Where(e => e.Amount > 0)
             .Select(e => new ExpenseLog(

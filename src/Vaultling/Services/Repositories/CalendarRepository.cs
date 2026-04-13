@@ -58,7 +58,8 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
             .Select(e => (Event: e, Category: e.CycleExpenseCategory!, Desc: e.CycleExpenseDesc ?? ""))
             .SelectMany(t =>
             {
-                var expenseDate = FindLatestMatchingExpense(t.Category, t.Desc, year);
+                var latestExpense = _expenseRepository.FindLatestExpense(t.Category, t.Desc);
+                var expenseDate = latestExpense == null ? (DateTime?)null : new DateTime(year, latestExpense.Month, latestExpense.Day);
                 if (expenseDate == null) return [];
                 return GetCycleOccurrences(t.Event, expenseDate.Value)
                     .Where(o => o.Date.Year == year);
@@ -71,7 +72,53 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
             .OrderBy(o => o.Date);
     }
 
-    internal IEnumerable<CalendarOccurrence> ReadExpenseEvents(int year)
+    public string? GetTravelCityForDate(DateTime date)
+    {
+        foreach (var expense in _expenseRepository.ReadRecentExpenses())
+        {
+            var description = expense.Description.Trim();
+
+            var rangeMatch = RangeDateInDescriptionRegex().Match(description);
+            if (!rangeMatch.Success) continue;
+
+            if (!DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate))
+                continue;
+            if (!DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate))
+                continue;
+
+            if (date.Date < depDate.Date || date.Date >= retDate.Date) continue;
+
+            var notePart = ExtractNote(description, rangeMatch.Index);
+            if (string.IsNullOrEmpty(notePart)) continue;
+
+            var words = notePart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) continue;
+
+            return words[^1];
+        }
+
+        return null;
+    }
+
+    public IEnumerable<string> ReadCalendarReportLines(int year)
+    {
+        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
+        if (string.IsNullOrEmpty(reportFile) || !File.Exists(reportFile))
+            return [];
+
+        return File.ReadLines(reportFile);
+    }
+
+    public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)
+    {
+        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
+        if (string.IsNullOrEmpty(reportFile))
+            return;
+
+        File.WriteAllLines(reportFile, markdownLines);
+    }
+
+    private IEnumerable<CalendarOccurrence> ReadExpenseEvents(int year)
     {
         foreach (var expense in _expenseRepository.ReadRecentExpenses())
         {
@@ -113,45 +160,12 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
         }
     }
 
-    internal string? GetTravelCityForDate(DateTime date)
-    {
-        foreach (var expense in _expenseRepository.ReadRecentExpenses())
-        {
-            var description = expense.Description.Trim();
-
-            var rangeMatch = RangeDateInDescriptionRegex().Match(description);
-            if (!rangeMatch.Success) continue;
-
-            if (!DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate))
-                continue;
-            if (!DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate))
-                continue;
-
-            if (date.Date < depDate.Date || date.Date >= retDate.Date) continue;
-
-            var notePart = ExtractNote(description, rangeMatch.Index);
-            if (string.IsNullOrEmpty(notePart)) continue;
-
-            var words = notePart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (words.Length == 0) continue;
-
-            return words[^1];
-        }
-
-        return null;
-    }
-
     private static string ExtractNote(string description, int endIndex)
     {
         var notePart = description[..endIndex];
         return ConnectorWordRegex().Replace(notePart, "").Trim();
     }
 
-    internal DateTime? FindLatestMatchingExpense(string category, string desc, int year)
-    {
-        var expense = _expenseRepository.FindLatestExpense(category, desc);
-        return expense == null ? null : new DateTime(year, expense.Month, expense.Day);
-    }
 
     internal static IEnumerable<CalendarOccurrence> GetCycleOccurrences(WeeklyRecurringEvent weekly, DateTime expenseDate)
     {
@@ -227,24 +241,6 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
         }
 
         return new CalendarOccurrence(new DateTime(year, month, day, hour, minute, 0), note, cancelled);
-    }
-
-    public IEnumerable<string> ReadCalendarReportLines(int year)
-    {
-        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
-        if (string.IsNullOrEmpty(reportFile) || !File.Exists(reportFile))
-            return [];
-
-        return File.ReadLines(reportFile);
-    }
-
-    public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)
-    {
-        var reportFile = Utils.ResolveYearPath(_options.ReportFile, year);
-        if (string.IsNullOrEmpty(reportFile))
-            return;
-
-        File.WriteAllLines(reportFile, markdownLines);
     }
 
     private static RecurringEvent? ParseRecurringSchedule(string schedule, string note, int? cycleCount = null, string? cycleExpenseCategory = null, string? cycleExpenseDesc = null)

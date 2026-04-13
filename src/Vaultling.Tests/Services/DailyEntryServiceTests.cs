@@ -65,7 +65,9 @@ public class DailyEntryServiceTests
                 {
                     DataFile = expenseFile
                 })),
-                new CalendarRepository(Options.Create(new CalendarOptions())),
+                new CalendarRepository(
+                    Options.Create(new CalendarOptions()),
+                    new ExpenseRepository(Options.Create(new ExpenseOptions()))),
                 CreateStubWeatherRepository(),
                 TimeProvider.System);
 

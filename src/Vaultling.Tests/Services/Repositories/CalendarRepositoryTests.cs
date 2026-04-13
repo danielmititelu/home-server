@@ -238,7 +238,7 @@ public class CalendarRepositoryTests
                 "4,9,hobby,400,pian"     // April 9 – latest
             ]);
 
-            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "{year}-expenses-csv.md"))
+            var occurrences = MakeRepository(eventsFile, expenseDataFile: Path.Combine(tempDir, "2026-expenses-csv.md"))
                 .ReadCalendarOccurrences(2026)
                 .ToList();
 
