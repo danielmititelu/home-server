@@ -4,17 +4,24 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Vaultling.Utils;
 
-public class CalendarRepository(IOptions<CalendarOptions> options)
+public partial class CalendarRepository(IOptions<CalendarOptions> options)
 {
-    private readonly CalendarOptions _options = options.Value;
-    private static readonly string[] MonthNames = CultureInfo.InvariantCulture.DateTimeFormat.MonthNames
-        .Where(m => !string.IsNullOrEmpty(m))
-        .Select(m => m.ToLowerInvariant())
-        .ToArray();
+    [GeneratedRegex(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled)]
+    private static partial Regex DateInDescriptionRegex();
 
-    private static readonly string[] DayNames = CultureInfo.InvariantCulture.DateTimeFormat.DayNames
-        .Select(d => d.ToLowerInvariant())
-        .ToArray();
+    [GeneratedRegex(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b\s*->\s*\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled)]
+    private static partial Regex RangeDateInDescriptionRegex();
+
+    [GeneratedRegex(@"\s+\b(?:pe|at|on|in|la|spre|to)\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "")]
+    private static partial Regex ConnectorWordRegex();
+
+    private readonly CalendarOptions _options = options.Value;
+    private static readonly string[] MonthNames = [.. CultureInfo.InvariantCulture.DateTimeFormat.MonthNames
+        .Where(m => !string.IsNullOrEmpty(m))
+        .Select(m => m.ToLowerInvariant())];
+
+    private static readonly string[] DayNames = [.. CultureInfo.InvariantCulture.DateTimeFormat.DayNames
+        .Select(d => d.ToLowerInvariant())];
 
     public IEnumerable<CalendarOccurrence> ReadCalendarOccurrences(int year)
     {
@@ -56,15 +63,6 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
             .OrderBy(o => o.Date);
     }
 
-    private static readonly Regex DateInDescriptionRegex =
-        new(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled);
-
-    private static readonly Regex RangeDateInDescriptionRegex =
-        new(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b\s*->\s*\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled);
-
-    private static readonly Regex ConnectorWordRegex =
-        new(@"\s+\b(?:pe|at|on|in|la|spre|to)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
     internal IEnumerable<CalendarOccurrence> ReadExpenseEvents(int year)
     {
         foreach (var checkYear in new[] { year - 1, year })
@@ -80,7 +78,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
                 var description = parts[4].Trim();
 
                 // Range match (departure -> return) takes priority
-                var rangeMatch = RangeDateInDescriptionRegex.Match(description);
+                var rangeMatch = RangeDateInDescriptionRegex().Match(description);
                 if (rangeMatch.Success)
                 {
                     var notePart = ExtractNote(description, rangeMatch.Index);
@@ -98,7 +96,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
                 }
 
                 // Single date
-                var match = DateInDescriptionRegex.Match(description);
+                var match = DateInDescriptionRegex().Match(description);
                 if (!match.Success) continue;
 
                 var dateStr = match.Groups[1].Value;
@@ -130,7 +128,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
                 if (parts.Length < 5) continue;
                 var description = parts[4].Trim();
 
-                var rangeMatch = RangeDateInDescriptionRegex.Match(description);
+                var rangeMatch = RangeDateInDescriptionRegex().Match(description);
                 if (!rangeMatch.Success) continue;
 
                 if (!DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate))
@@ -156,7 +154,7 @@ public class CalendarRepository(IOptions<CalendarOptions> options)
     private static string ExtractNote(string description, int endIndex)
     {
         var notePart = description[..endIndex];
-        return ConnectorWordRegex.Replace(notePart, "").Trim();
+        return ConnectorWordRegex().Replace(notePart, "").Trim();
     }
 
     internal DateTime? FindLatestMatchingExpense(string cycleExpenseMatch, int year)
