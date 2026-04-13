@@ -40,9 +40,9 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
         _cachedRecentExpenses = null;
     }
 
-    public void WriteExpenseReport(IEnumerable<string> markdownLines)
+    public void WriteExpenseReport(string markdown)
     {
-        File.WriteAllLines(_options.CurrentYearReportFile, markdownLines);
+        File.WriteAllText(_options.CurrentYearReportFile, markdown);
     }
 
     private static IEnumerable<ExpenseLog> ParseExpenseFile(string file)

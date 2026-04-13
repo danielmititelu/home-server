@@ -81,21 +81,19 @@ public static class Utils
         _ => CapitalizeFirst(date.ToString("dddd", Romanian))
     };
 
-    public static void AppendCalendarGrid(
-        List<string> sections,
+    public static string BuildMonthlyCalendar(
         int year,
         int month,
         Func<int, string> dayCellResolver)
     {
-        sections.Add("| Mon | Tue | Wed | Thu | Fri | Sat | Sun |");
-        sections.Add("|-----|-----|-----|-----|-----|-----|-----|");
-
         var daysInMonth = DateTime.DaysInMonth(year, month);
         var firstDay = new DateTime(year, month, 1);
 
         var currentWeek = new List<string>();
         var startDayOfWeek = (int)firstDay.DayOfWeek;
         startDayOfWeek = startDayOfWeek == 0 ? 6 : startDayOfWeek - 1;
+
+        var weekRows = new List<string>();
 
         for (int i = 0; i < startDayOfWeek; i++)
             currentWeek.Add("     ");
@@ -106,7 +104,7 @@ public static class Utils
 
             if (currentWeek.Count == 7)
             {
-                sections.Add($"| {string.Join(" | ", currentWeek)} |");
+                weekRows.Add($"| {string.Join(" | ", currentWeek)} |");
                 currentWeek.Clear();
             }
         }
@@ -116,7 +114,13 @@ public static class Utils
             while (currentWeek.Count < 7)
                 currentWeek.Add("     ");
 
-            sections.Add($"| {string.Join(" | ", currentWeek)} |");
+            weekRows.Add($"| {string.Join(" | ", currentWeek)} |");
         }
+
+        return $"""
+            | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
+            |-----|-----|-----|-----|-----|-----|-----|
+            {string.Join("\n", weekRows)}
+            """;
     }
 }

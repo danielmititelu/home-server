@@ -28,7 +28,7 @@ public class ExpenseService(ExpenseRepository expenseRepository)
         expenseRepository.WriteExpenseReport(GenerateExpenseMarkdownReport(report));
     }
 
-    private static string[] GenerateExpenseMarkdownReport(ExpenseReport report)
+    private static string GenerateExpenseMarkdownReport(ExpenseReport report)
     {
         var sections = new List<string>();
 
@@ -46,6 +46,6 @@ public class ExpenseService(ExpenseRepository expenseRepository)
             sections.Add(monthSection);
         }
 
-        return string.Join("\n", sections).Split('\n');
+        return string.Join("\n", sections);
     }
 }

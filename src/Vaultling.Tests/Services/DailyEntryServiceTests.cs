@@ -107,7 +107,7 @@ public class DailyEntryServiceTests
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(original);
         var tempFile = Path.GetTempFileName();
-        File.WriteAllLines(tempFile, markdown);
+        File.WriteAllText(tempFile, markdown);
         var reparsed = ReadEntryFromFile(tempFile);
         File.Delete(tempFile);
 
@@ -134,8 +134,7 @@ public class DailyEntryServiceTests
                 new CalendarOccurrence(new DateTime(2026, 4, 2, 18, 0, 0), "Piano lesson")
             ]);
 
-        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry));
-        var expectedCalendarLink = Vaultling.Utils.Utils.GetCalendarReportMonthLink(entryDate.DateTime);
+        var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry);
 
         Assert.Contains(expectedCalendarLink, markdown);
         Assert.Contains("Azi la 18:00: Piano lesson", markdown);
@@ -154,7 +153,7 @@ public class DailyEntryServiceTests
             Expenses: [],
             CalendarEvents: []);
 
-        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry));
+        var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry);
 
         Assert.Contains("# Todo", markdown);
         Assert.Contains("- [ ]", markdown);
@@ -172,7 +171,7 @@ public class DailyEntryServiceTests
             City: "Bucharest");
         var weather = new WeatherInfo("Bucharest", "\u2600\ufe0f 18\u00b0C, Clear sky", "06:15", "19:50");
 
-        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather));
+        var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather);
 
         Assert.Contains("# Weather", markdown);
         Assert.Contains("Bucharest", markdown);
@@ -191,7 +190,7 @@ public class DailyEntryServiceTests
             CalendarEvents: [],
             City: "Bucharest");
 
-        var markdown = string.Join("\n", DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather: null));
+        var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather: null);
 
         Assert.Contains("# Weather", markdown);
         Assert.Contains("Bucharest", markdown);

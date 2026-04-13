@@ -64,7 +64,7 @@ public class DailyEntryService(
         dailyEntryRepository.WriteDailyEntry(GenerateMarkdownForDailyEntry(newTodayEntry, weather));
     }
 
-    public static IEnumerable<string> GenerateMarkdownForDailyEntry(DailyEntry dailyEntry, WeatherInfo? weather = null)
+    public static string GenerateMarkdownForDailyEntry(DailyEntry dailyEntry, WeatherInfo? weather = null)
     {
         var workoutLines = string.Join("\n", dailyEntry.Workouts.Select(w => $"{w.Exercise},{w.Reps}"));
         var todoItems = dailyEntry.Todos.ToList();
@@ -112,6 +112,6 @@ public class DailyEntryService(
             {todoLines}
             """;
 
-        return markdown.Split('\n');
+        return markdown;
     }
 }

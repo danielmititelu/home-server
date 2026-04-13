@@ -34,22 +34,15 @@ public class WorkoutService(WorkoutRepository workoutRepository, TimeProvider ti
         workoutRepository.WriteWorkoutReport(GenerateMarkdownWorkoutReport(months));
     }
 
-    private static List<string> GenerateMarkdownWorkoutReport(List<MonthlyWorkoutSummary> months)
+    private static string GenerateMarkdownWorkoutReport(List<MonthlyWorkoutSummary> months)
     {
         var sections = new List<string>();
 
         foreach (var month in months)
         {
             var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Month);
-            sections.Add($"## {month.Month:00} - {monthName}");
-            sections.Add("");
-
             var totalDays = month.DayWorkoutCounts.Count;
-            sections.Add($"**Total Days: {totalDays}**");
-            sections.Add("");
-
-            Utils.AppendCalendarGrid(
-                sections,
+            var calendarGrid = Utils.BuildMonthlyCalendar(
                 month.Year,
                 month.Month,
                 day =>
@@ -58,9 +51,18 @@ public class WorkoutService(WorkoutRepository workoutRepository, TimeProvider ti
                     return count > 0 ? $"✅ {day:00}" : $"⬜ {day:00}";
                 });
 
-            sections.Add("");
+            var monthSection = $"""
+                ## {month.Month:00} - {monthName}
+
+                **Total Days: {totalDays}**
+
+                {calendarGrid}
+
+                """;
+
+            sections.Add(monthSection);
         }
 
-        return sections;
+        return string.Join("", sections);
     }
 }

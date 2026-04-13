@@ -64,8 +64,8 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
         }).OfType<WorkoutLog>();
     }
 
-    public void WriteWorkoutReport(IEnumerable<string> markdownLines)
+    public void WriteWorkoutReport(string markdown)
     {
-        File.WriteAllLines(_options.CurrentYearReportFile, markdownLines);
+        File.WriteAllText(_options.CurrentYearReportFile, markdown);
     }
 }

@@ -27,7 +27,7 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
         }
     }
 
-    private static List<string> GenerateMarkdownForCalendarReport(List<MonthlyCalendarSummary> months)
+    private static string GenerateMarkdownForCalendarReport(List<MonthlyCalendarSummary> months)
     {
         var sections = new List<string>();
         var today = DateTime.Today;
@@ -39,19 +39,15 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
             var currentMonthSymbol = isCurrentMonth ? " 🔵" : "";
 
             var eventDays = month.Events.Select(e => e.Date.Day).ToHashSet();
-            var gridLines = new List<string>();
-            Utils.AppendCalendarGrid(
-                gridLines,
+            var calendarGrid = Utils.BuildMonthlyCalendar(
                 month.Year,
                 month.Month,
                 day =>
                 {
                     var isToday = isCurrentMonth && day == today.Day;
-                    return isToday
-                        ? $"🔵 {day:00}"
-                        : eventDays.Contains(day) ? $"📅 {day:00}" : $"⬜ {day:00}";
+                    var prefix = isToday ? "🔵" : eventDays.Contains(day) ? "📅" : "⬜";
+                    return $"{prefix} {day:00}";
                 });
-            var calendarGrid = string.Join("\n", gridLines);
 
             var eventsBlock = month.Events.Count > 0
                 ? "\n" + string.Join("\n", month.Events.OrderBy(e => e.Date).Select(evt =>
@@ -70,9 +66,9 @@ public class CalendarService(CalendarRepository calendarRepository, TimeProvider
 
                 """;
 
-            sections.AddRange(monthSection.Split('\n'));
+            sections.Add(monthSection);
         }
 
-        return sections;
+        return string.Join("", sections);
     }
 }

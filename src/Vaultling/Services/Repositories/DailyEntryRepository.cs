@@ -68,8 +68,8 @@ public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
         File.Move(todayFilePath, archiveFilePath);
     }
 
-    public void WriteDailyEntry(IEnumerable<string> markdownLines)
+    public void WriteDailyEntry(string markdown)
     {
-        File.WriteAllLines(_options.TodayFile, markdownLines);
+        File.WriteAllText(_options.TodayFile, markdown);
     }
 }

@@ -100,13 +100,13 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
         return null;
     }
 
-    public void WriteCalendarReport(int year, IEnumerable<string> markdownLines)
+    public void WriteCalendarReport(int year, string markdown)
     {
         var reportFile = Utils.ResolveYearPath(_options.ReportFileTemplate, year);
         if (string.IsNullOrEmpty(reportFile))
             return;
 
-        File.WriteAllLines(reportFile, markdownLines);
+        File.WriteAllText(reportFile, markdown);
     }
 
     private IEnumerable<CalendarOccurrence> ReadExpenseEvents(int year)
