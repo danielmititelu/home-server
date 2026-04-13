@@ -53,8 +53,9 @@ public class WeatherRepository(HttpClient httpClient)
 
             return new WeatherInfo(City: city, Summary: summary, Sunrise: sunrise, Sunset: sunset);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"Failed to fetch weather for {city}. Returning null weather info. Error: {ex.Message}");
             return new WeatherInfo(City: city, Summary: null, Sunrise: null, Sunset: null);
         }
     }

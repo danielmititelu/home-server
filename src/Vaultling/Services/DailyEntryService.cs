@@ -16,6 +16,7 @@ public class DailyEntryService(
 
         if (yesterdayEntry.Date.ToIsoDateString() == todayDate)
         {
+            Console.WriteLine("Today's entry already exists. Skipping daily entry processing.");
             return;
         }
 
