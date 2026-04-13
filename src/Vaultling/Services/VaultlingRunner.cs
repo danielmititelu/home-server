@@ -4,8 +4,7 @@ public class VaultlingRunner(
     DailyEntryService dailyEntryService,
     WorkoutService workoutService,
     ExpenseService expenseService,
-    CalendarService calendarService,
-    ErrorRepository errorRepository)
+    CalendarService calendarService)
 {
     public async Task RunAsync()
     {
@@ -19,7 +18,7 @@ public class VaultlingRunner(
         }
         catch (Exception ex)
         {
-            errorRepository.WriteErrorLog(ex);
+            Console.Error.WriteLine($"Unhandled exception: {ex}");
             throw;
         }
     }
