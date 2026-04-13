@@ -11,7 +11,8 @@ public class DailyEntryService(
 {
     public async Task ProcessDailyEntryAsync()
     {
-        var todayDate = timeProvider.GetLocalNow().ToIsoDateString();
+        var now = timeProvider.GetLocalNow();
+        var todayDate = now.ToIsoDateString();
         var yesterdayEntry = dailyEntryRepository.ReadDailyEntry();
 
         if (yesterdayEntry.Date.ToIsoDateString() == todayDate)
@@ -45,15 +46,15 @@ public class DailyEntryService(
         var carryOverTodos = yesterdayEntry.Todos
             .Where(t => !t.Contains("[x]", StringComparison.OrdinalIgnoreCase));
         
-        var currentYear = timeProvider.GetLocalNow().Year;
+        var currentYear = now.Year;
         var calendarEvents = calendarRepository.CollectCalendarOccurrencesForYear(currentYear);
         
         var city = yesterdayEntry.City;
-        var travelCity = calendarRepository.GetTravelCityForDate(timeProvider.GetLocalNow().Date);
+        var travelCity = calendarRepository.GetTravelCityForDate(now.Date);
         var weather = await weatherRepository.FetchWeatherAsync(travelCity ?? city);
 
         var newTodayEntry = new DailyEntry(
-            Date: timeProvider.GetLocalNow(),
+            Date: now,
             Workouts: todayWorkouts,
             Todos: carryOverTodos,
             Expenses: [],
@@ -72,7 +73,7 @@ public class DailyEntryService(
             : "- [ ]";
         var today = dailyEntry.Date.Date;
         var calendarReportLink = Utils.GetCalendarReportMonthLink(dailyEntry.Date.DateTime);
-        var upcomingEvents = dailyEntry.CalendarEvents
+        var upcomingEvents = (dailyEntry.CalendarEvents ?? [])
             .Where(e => e.Date > dailyEntry.Date.DateTime && e.Date <= dailyEntry.Date.DateTime.AddDays(14))
             .OrderBy(e => e.Date);
         var calendarLines = upcomingEvents.Any()

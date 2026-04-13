@@ -27,23 +27,6 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
                 e.Description.Contains(descriptionContains, StringComparison.OrdinalIgnoreCase))
             .MaxBy(e => (e.Month, e.Day));
 
-    private static IEnumerable<ExpenseLog> ParseExpenseFile(string file)
-    {
-        if (!File.Exists(file)) return [];
-        return Utils.ParseCsv(File.ReadLines(file), parts =>
-        {
-            if (parts.Length < 5
-                || !int.TryParse(parts[0], out var month)
-                || !int.TryParse(parts[1], out var day)
-                || !decimal.TryParse(parts[3], System.Globalization.CultureInfo.InvariantCulture, out var amount))
-            {
-                Console.Error.WriteLine($"[ExpenseRepository] Skipping malformed row: '{string.Join(",", parts)}'");
-                return null;
-            }
-            return new ExpenseLog(Month: month, Day: day, Category: parts[2].ToLower(), Amount: amount, Description: parts[4]);
-        }).OfType<ExpenseLog>();
-    }
-
     public void AppendExpenses(IEnumerable<ExpenseLog> expenses)
     {
         var lines = expenses
@@ -60,5 +43,22 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
     public void WriteExpenseReport(IEnumerable<string> markdownLines)
     {
         File.WriteAllLines(_options.ReportFile, markdownLines);
+    }
+
+    private static IEnumerable<ExpenseLog> ParseExpenseFile(string file)
+    {
+        if (!File.Exists(file)) return [];
+        return Utils.ParseCsv(File.ReadLines(file), parts =>
+        {
+            if (parts.Length < 5
+                || !int.TryParse(parts[0], out var month)
+                || !int.TryParse(parts[1], out var day)
+                || !decimal.TryParse(parts[3], System.Globalization.CultureInfo.InvariantCulture, out var amount))
+            {
+                Console.Error.WriteLine($"[ExpenseRepository] Skipping malformed row: '{string.Join(",", parts)}'");
+                return null;
+            }
+            return new ExpenseLog(Month: month, Day: day, Category: parts[2].ToLower(), Amount: amount, Description: parts[4]);
+        }).OfType<ExpenseLog>();
     }
 }

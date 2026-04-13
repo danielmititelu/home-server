@@ -11,7 +11,7 @@ public class VaultlingRunner(
     {
         try
         {
-            Console.WriteLine("Vaulting started");
+            Console.WriteLine("Vaultling started");
             await dailyEntryService.ProcessDailyEntryAsync();
             workoutService.ProduceWorkoutReport();
             expenseService.ProduceExpenseReport();
