@@ -14,8 +14,8 @@ public class ExpenseRepositoryTests
     public ExpenseRepositoryTests()
     {
         _repository = new ExpenseRepository(
-            Options.Create(new ExpenseOptions { DataFile = TestDataPath }));
-        _expenses = _repository.ReadExpenses().ToList();
+            Options.Create(new ExpenseOptions { CurrentYearDataFile = TestDataPath }));
+        _expenses = _repository.ReadCurrentYearExpenses().ToList();
     }
 
     [Fact]
@@ -60,12 +60,12 @@ public class ExpenseRepositoryTests
         try
         {
             var repository = new ExpenseRepository(
-                Options.Create(new ExpenseOptions { DataFile = tempFile }));
+                Options.Create(new ExpenseOptions { CurrentYearDataFile = tempFile }));
 
             var expense = new ExpenseLog(3, 7, "food", 45.50m, "groceries");
             repository.AppendExpenses([expense]);
 
-            var reparsed = repository.ReadExpenses().Single();
+            var reparsed = repository.ReadCurrentYearExpenses().Single();
             Assert.Equal(expense, reparsed);
         }
         finally

@@ -63,7 +63,7 @@ public class DailyEntryServiceTests
                 }), TimeProvider.System),
                 new ExpenseRepository(Options.Create(new ExpenseOptions
                 {
-                    DataFile = expenseFile
+                    CurrentYearDataFile = expenseFile
                 })),
                 new CalendarRepository(
                     Options.Create(new CalendarOptions()),
@@ -85,8 +85,8 @@ public class DailyEntryServiceTests
             Assert.Equal("20-20-20", workouts[0].Reps);
 
             var expenses = new ExpenseRepository(
-                Options.Create(new ExpenseOptions { DataFile = expenseFile }))
-                .ReadExpenses().ToList();
+                Options.Create(new ExpenseOptions { CurrentYearDataFile = expenseFile }))
+                .ReadCurrentYearExpenses().ToList();
 
             Assert.Equal(2, expenses.Count);
             Assert.Equal(3, expenses[0].Month);

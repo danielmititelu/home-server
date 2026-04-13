@@ -8,6 +8,7 @@ public class ErrorRepository(IOptions<ErrorOptions> options, TimeProvider timePr
     {
         var errorFileName = $"{timeProvider.GetLocalNow().ToIsoDateString()}-error.md";
         var errorFilePath = Path.Combine(_options.LogDirectory, errorFileName);
+        Directory.CreateDirectory(_options.LogDirectory);
 
         var errorContent = $"""
             # Error Log - {timeProvider.GetLocalNow():yyyy-MM-dd HH:mm:ss}

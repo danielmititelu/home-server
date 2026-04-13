@@ -20,6 +20,11 @@ public class WorkoutRepository(IOptions<WorkoutOptions> options, TimeProvider ti
         }
 
         var parts = todayLine.Split(',');
+        if (parts.Length < 3)
+        {
+            Console.Error.WriteLine($"[WorkoutRepository] Schedule row for '{todayDayOfWeek}' has fewer than 3 columns.");
+            return [];
+        }
         return
         [
             new DailyWorkout(parts[1], ""),

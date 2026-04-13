@@ -24,17 +24,28 @@ public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
             }
         }
 
-        var date = DateTimeOffset.Parse(sectionsContent[DailySectionName.Date.ToString()].First());
-        var workouts = Utils.ParseCsv(sectionsContent[DailySectionName.Workout.ToString()], parts => new DailyWorkout(
+        if (!sectionsContent.TryGetValue(DailySectionName.Date.ToString(), out var dateLines)
+            || dateLines.Count == 0
+            || !DateTimeOffset.TryParse(dateLines[0], out var date))
+            throw new InvalidOperationException($"Daily entry file '{_options.TodayFile}' is missing a valid '{DailySectionName.Date}' section.");
+
+        if (!sectionsContent.TryGetValue(DailySectionName.Workout.ToString(), out var workoutLines))
+            workoutLines = [];
+        if (!sectionsContent.TryGetValue(DailySectionName.Expenses.ToString(), out var expenseLines))
+            expenseLines = [];
+        if (!sectionsContent.TryGetValue(DailySectionName.Todo.ToString(), out var todoLines))
+            todoLines = [];
+
+        var workouts = Utils.ParseCsv(workoutLines, parts => new DailyWorkout(
             Exercise: parts[0],
             Reps: parts.Length > 1 ? parts[1] : ""
         ));
-        var expenses = Utils.ParseCsv(sectionsContent[DailySectionName.Expenses.ToString()], parts => new DailyExpense(
+        var expenses = Utils.ParseCsv(expenseLines, parts => new DailyExpense(
             Category: parts[0],
             Amount: parts.Length > 1 && decimal.TryParse(parts[1], out var amt) ? amt : 0,
             Description: parts.Length > 2 ? parts[2] : ""
         ));
-        var todos = sectionsContent[DailySectionName.Todo.ToString()];
+        var todos = todoLines;
 
         var weatherSection = sectionsContent.TryGetValue(DailySectionName.Weather.ToString(), out var weatherLines)
             ? weatherLines

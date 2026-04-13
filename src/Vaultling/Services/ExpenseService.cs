@@ -6,7 +6,7 @@ public class ExpenseService(ExpenseRepository expenseRepository)
 {
     public void ProduceExpenseReport()
     {
-        var expenses = expenseRepository.ReadExpenses();
+        var expenses = expenseRepository.ReadCurrentYearExpenses();
 
         var months = expenses
             .GroupBy(e => e.Month)
