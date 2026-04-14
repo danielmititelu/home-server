@@ -63,7 +63,7 @@ public static class Utils
     public static string GetCalendarReportMonthLink(DateTime date)
     {
         var anchor = GetCalendarReportMonthAnchor(date.Year, date.Month);
-        return $"[[{date.Year}-calendar-report#{anchor}| toate evenimentele]]";
+        return $"[[{date.Year}-calendar-report#{anchor} 🔵|toate evenimentele]]";
     }
 
     private static string CapitalizeFirst(string s) =>
