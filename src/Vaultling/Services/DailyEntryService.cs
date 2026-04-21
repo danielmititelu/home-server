@@ -27,7 +27,7 @@ public class DailyEntryService(
                 Month: yesterdayEntry.Date.Month,
                 Day: yesterdayEntry.Date.Day,
                 Type: w.Exercise,
-                Reps: w.Reps
+                Reps: w.Reps.Replace(',', '-')
             )));
 
         expenseRepository.AppendExpenses(yesterdayEntry.Expenses

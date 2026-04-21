@@ -39,7 +39,7 @@ public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
         var workouts = Utils.ParseCsv(workoutLines, parts => new DailyWorkout(
             Exercise: parts[0],
             Reps: parts.Length > 1 ? parts[1] : ""
-        ));
+        ), maxColumnSplit: 2);
         var expenses = Utils.ParseCsv(expenseLines, parts => new DailyExpense(
             Category: parts[0],
             Amount: parts.Length > 1 && decimal.TryParse(parts[1], out var amt) ? amt : 0,

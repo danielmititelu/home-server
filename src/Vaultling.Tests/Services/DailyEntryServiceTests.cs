@@ -197,4 +197,78 @@ public class DailyEntryServiceTests
         Assert.Contains("Bucharest", markdown);
         Assert.DoesNotContain("\u00b0C", markdown);
     }
+
+    [Fact]
+    public async Task ProcessDailyEntry_WeightedWorkout_NormalizesReps()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-weighted-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var todayFile = Path.Combine(tempDir, "daily-entry.md");
+            File.WriteAllText(todayFile, """
+                # Date
+                2026-03-07
+
+                # Weather
+                Bucharest
+
+                # Workout
+                exercise,reps
+                squats,10x15,10x15,10x15
+
+                # Expenses
+                category,amount,description
+
+                # Todo
+                - [ ]
+                """);
+
+            var workoutLog = Path.Combine(tempDir, "workouts.csv");
+            File.WriteAllLines(workoutLog, ["month,day,type,reps"]);
+
+            var scheduleFile = Path.Combine(tempDir, "schedule.csv");
+            File.WriteAllLines(scheduleFile, ["day,exercise1,exercise2"]);
+
+            var expenseFile = Path.Combine(tempDir, "expenses.csv");
+            File.WriteAllLines(expenseFile, ["month,day,category,amount,description"]);
+
+            var service = new DailyEntryService(
+                new DailyEntryRepository(Options.Create(new DailyEntryOptions
+                {
+                    TodayFile = todayFile,
+                    HistoryDirectory = tempDir
+                })),
+                new WorkoutRepository(Options.Create(new WorkoutOptions
+                {
+                    CurrentYearLogFile = workoutLog,
+                    ScheduleFile = scheduleFile
+                }), TimeProvider.System),
+                new ExpenseRepository(Options.Create(new ExpenseOptions
+                {
+                    CurrentYearDataFile = expenseFile
+                })),
+                new CalendarRepository(
+                    Options.Create(new CalendarOptions()),
+                    new ExpenseRepository(Options.Create(new ExpenseOptions()))),
+                CreateStubWeatherRepository(),
+                TimeProvider.System);
+
+            await service.ProcessDailyEntryAsync();
+
+            var workouts = new WorkoutRepository(
+                Options.Create(new WorkoutOptions { CurrentYearLogFile = workoutLog }),
+                TimeProvider.System)
+                .ReadWorkoutLogs().ToList();
+
+            var log = Assert.Single(workouts);
+            Assert.Equal("squats", log.Type);
+            Assert.Equal("10x15-10x15-10x15", log.Reps);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }
