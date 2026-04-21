@@ -8,8 +8,6 @@ namespace Vaultling.Tests;
 
 public class DailyEntryServiceTests
 {
-    private static readonly string TestDataPath = Path.Combine("TestData", "daily-entry.md");
-
     private static DailyEntry ReadEntryFromFile(string path)
     {
         var repo = new DailyEntryRepository(Options.Create(new DailyEntryOptions
@@ -39,7 +37,27 @@ public class DailyEntryServiceTests
         try
         {
             var todayFile = Path.Combine(tempDir, "daily-entry.md");
-            File.Copy(TestDataPath, todayFile);
+            File.WriteAllText(todayFile, """
+                # Date
+                2026-03-07
+
+                # Weather
+                Bucharest
+
+                # Workout
+                exercise,reps
+                pushups,20-20-20
+                squats,20-20-20
+
+                # Expenses
+                category,amount,description
+                food,45.50,groceries
+                transport,12.00,bus
+
+                # Todo
+                Buy milk
+                [x] Clean kitchen
+                """);
 
             var workoutLog = Path.Combine(tempDir, "workouts.csv");
             File.WriteAllLines(workoutLog, ["month,day,type,reps"]);
@@ -103,7 +121,13 @@ public class DailyEntryServiceTests
     [Fact]
     public void GenerateMarkdownForDailyEntry_ThenParse_RoundTrips()
     {
-        var original = ReadEntryFromFile(TestDataPath);
+        var original = new DailyEntry(
+            Date: new DateTimeOffset(2026, 3, 7, 0, 0, 0, TimeSpan.Zero),
+            Workouts: [new DailyWorkout("pushups", "20-20-20"), new DailyWorkout("squats", "20-20-20")],
+            Todos: ["Buy milk", "[x] Clean kitchen"],
+            Expenses: [new DailyExpense("food", 45.50m, "groceries"), new DailyExpense("transport", 12.00m, "bus")],
+            CalendarEvents: [],
+            City: "Bucharest");
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(original);
         var tempFile = Path.GetTempFileName();

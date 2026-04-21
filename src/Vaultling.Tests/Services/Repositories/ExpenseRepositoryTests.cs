@@ -7,70 +7,86 @@ namespace Vaultling.Tests;
 
 public class ExpenseRepositoryTests
 {
-    private static readonly string TestDataPath = Path.Combine("TestData", "expenses.csv");
-    private readonly ExpenseRepository _repository;
-    private readonly List<ExpenseLog> _expenses;
+    private static ExpenseRepository CreateRepository(string filePath) =>
+        new ExpenseRepository(
+            Options.Create(new ExpenseOptions { CurrentYearDataFile = filePath }));
 
-    public ExpenseRepositoryTests()
+    private static string WriteTempCsv(params string[] rows)
     {
-        _repository = new ExpenseRepository(
-            Options.Create(new ExpenseOptions { CurrentYearDataFile = TestDataPath }));
-        _expenses = _repository.ReadCurrentYearExpenses().ToList();
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllLines(tempFile, ["month,day,category,amount,description", .. rows]);
+        return tempFile;
     }
 
     [Fact]
     public void ReadExpenses_ReadsAllExpenseRows()
     {
-        Assert.Equal(4, _expenses.Count);
+        var tempFile = WriteTempCsv(
+            "1,5,food,45.50,groceries",
+            "1,12,transport,25.00,bus pass",
+            "2,3,food,30.00,restaurant",
+            "2,15,utilities,150.00,electricity");
+        try
+        {
+            var expenses = CreateRepository(tempFile).ReadCurrentYearExpenses().ToList();
+            Assert.Equal(4, expenses.Count);
+        }
+        finally { File.Delete(tempFile); }
     }
 
     [Fact]
     public void ReadExpenses_SkipsHeader()
     {
-        var first = _expenses.First();
-
-        Assert.Equal(1, first.Month);
-        Assert.Equal(5, first.Day);
+        var tempFile = WriteTempCsv("1,5,food,45.50,groceries");
+        try
+        {
+            var first = CreateRepository(tempFile).ReadCurrentYearExpenses().First();
+            Assert.Equal(1, first.Month);
+            Assert.Equal(5, first.Day);
+        }
+        finally { File.Delete(tempFile); }
     }
 
     [Fact]
     public void ReadExpenses_ParsesFieldsCorrectly()
     {
-        var first = _expenses[0];
-        Assert.Equal(1, first.Month);
-        Assert.Equal(5, first.Day);
-        Assert.Equal("food", first.Category);
-        Assert.Equal(45.50m, first.Amount);
-        Assert.Equal("groceries", first.Description);
+        var tempFile = WriteTempCsv(
+            "1,5,food,45.50,groceries",
+            "2,15,utilities,150.00,electricity");
+        try
+        {
+            var expenses = CreateRepository(tempFile).ReadCurrentYearExpenses().ToList();
 
-        var last = _expenses[3];
-        Assert.Equal(2, last.Month);
-        Assert.Equal(15, last.Day);
-        Assert.Equal("utilities", last.Category);
-        Assert.Equal(150.00m, last.Amount);
-        Assert.Equal("electricity", last.Description);
+            var first = expenses[0];
+            Assert.Equal(1, first.Month);
+            Assert.Equal(5, first.Day);
+            Assert.Equal("food", first.Category);
+            Assert.Equal(45.50m, first.Amount);
+            Assert.Equal("groceries", first.Description);
+
+            var last = expenses[1];
+            Assert.Equal(2, last.Month);
+            Assert.Equal(15, last.Day);
+            Assert.Equal("utilities", last.Category);
+            Assert.Equal(150.00m, last.Amount);
+            Assert.Equal("electricity", last.Description);
+        }
+        finally { File.Delete(tempFile); }
     }
 
     [Fact]
     public void AppendExpenses_ThenReadExpenses_RoundTrips()
     {
-        var tempFile = Path.GetTempFileName();
-        File.WriteAllLines(tempFile, ["month,day,category,amount,description"]);
-
+        var tempFile = WriteTempCsv();
         try
         {
-            var repository = new ExpenseRepository(
-                Options.Create(new ExpenseOptions { CurrentYearDataFile = tempFile }));
-
+            var repository = CreateRepository(tempFile);
             var expense = new ExpenseLog(3, 7, "food", 45.50m, "groceries");
             repository.AppendExpenses([expense]);
 
             var reparsed = repository.ReadCurrentYearExpenses().Single();
             Assert.Equal(expense, reparsed);
         }
-        finally
-        {
-            File.Delete(tempFile);
-        }
+        finally { File.Delete(tempFile); }
     }
 }
