@@ -33,6 +33,7 @@ public class DailyEntryService(
         expenseRepository.AppendExpenses(yesterdayEntry.Expenses
             .Where(e => e.Amount > 0)
             .Select(e => new ExpenseLog(
+                Year: yesterdayEntry.Date.Year,
                 Month: yesterdayEntry.Date.Month,
                 Day: yesterdayEntry.Date.Day,
                 Category: e.Category,

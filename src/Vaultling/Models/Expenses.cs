@@ -1,6 +1,6 @@
 namespace Vaultling.Models;
 
-public record ExpenseLog(int Month, int Day, string Category, decimal Amount, string Description);
+public record ExpenseLog(int Year, int Month, int Day, string Category, decimal Amount, string Description);
 
 public record CategoryExpenseTotal(string Category, decimal Amount);
 

@@ -59,7 +59,9 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
             .SelectMany(t =>
             {
                 var latestExpense = _expenseRepository.FindLatestExpense(t.Category, t.Desc);
-                var expenseDate = latestExpense == null ? (DateTime?)null : new DateTime(year, latestExpense.Month, latestExpense.Day);
+                var expenseDate = latestExpense == null
+                    ? (DateTime?)null
+                    : new DateTime(latestExpense.Year, latestExpense.Month, latestExpense.Day);
                 if (expenseDate == null) return [];
                 return GetCycleOccurrences(t.Event, expenseDate.Value)
                     .Where(o => o.Date.Year == year);

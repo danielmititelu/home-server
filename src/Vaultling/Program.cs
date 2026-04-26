@@ -24,6 +24,7 @@ services.PostConfigure<ExpenseOptions>(opts =>
     opts.PreviousYearDataFile = Utils.ResolveYearPath(opts.DataFileTemplate, currentYear - 1);
     opts.CurrentYearDataFile = Utils.ResolveYearPath(opts.DataFileTemplate, currentYear);
     opts.CurrentYearReportFile = Utils.ResolveYearPath(opts.ReportFileTemplate, currentYear);
+    opts.CurrentYear = currentYear;
 });
 services.AddSingleton(TimeProvider.System);
 services.AddSingleton<DailyEntryRepository>();

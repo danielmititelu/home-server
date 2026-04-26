@@ -7,4 +7,5 @@ public class ExpenseOptions
     public string PreviousYearDataFile { get; set; } = "";
     public string ReportFileTemplate { get; set; } = "";
     public string CurrentYearReportFile { get; set; } = "";
+    public int CurrentYear { get; set; }
 }

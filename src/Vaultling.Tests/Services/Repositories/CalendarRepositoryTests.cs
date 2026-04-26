@@ -7,8 +7,8 @@ namespace Vaultling.Tests;
 
 public class CalendarRepositoryTests
 {
-    private static ExpenseRepository MakeExpenseRepository(string dataFile = "", string previousYearDataFile = "")
-        => new(Options.Create(new ExpenseOptions { CurrentYearDataFile = dataFile, PreviousYearDataFile = previousYearDataFile }));
+    private static ExpenseRepository MakeExpenseRepository(string dataFile = "", string previousYearDataFile = "", int currentYear = 2026)
+        => new(Options.Create(new ExpenseOptions { CurrentYearDataFile = dataFile, PreviousYearDataFile = previousYearDataFile, CurrentYear = currentYear }));
 
     private static CalendarRepository MakeRepository(string eventsFile, string reportFile = "", string expenseDataFile = "")
         => MakeRepository(eventsFile, reportFile, MakeExpenseRepository(expenseDataFile));

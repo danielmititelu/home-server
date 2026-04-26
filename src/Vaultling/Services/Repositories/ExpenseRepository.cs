@@ -8,14 +8,16 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
     private List<ExpenseLog>? _cachedRecentExpenses;
 
     public IEnumerable<ExpenseLog> ReadCurrentYearExpenses()
-        => ParseExpenseFile(_options.CurrentYearDataFile);
+        => ParseExpenseFile(_options.CurrentYearDataFile, _options.CurrentYear);
 
     public IEnumerable<ExpenseLog> ReadRecentExpenses()
     {
         if (_cachedRecentExpenses != null)
             return _cachedRecentExpenses;
 
-        var previousYearExpenses = string.IsNullOrEmpty(_options.PreviousYearDataFile) ? [] : ParseExpenseFile(_options.PreviousYearDataFile);
+        var previousYearExpenses = string.IsNullOrEmpty(_options.PreviousYearDataFile)
+            ? []
+            : ParseExpenseFile(_options.PreviousYearDataFile, _options.CurrentYear - 1);
         _cachedRecentExpenses = [.. previousYearExpenses, .. ReadCurrentYearExpenses()];
         return _cachedRecentExpenses;
     }
@@ -25,7 +27,7 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
             .Where(e =>
                 e.Category.Contains(category, StringComparison.OrdinalIgnoreCase) &&
                 e.Description.Contains(descriptionContains, StringComparison.OrdinalIgnoreCase))
-            .MaxBy(e => (e.Month, e.Day));
+            .MaxBy(e => (e.Year, e.Month, e.Day));
 
     public void AppendExpenses(IEnumerable<ExpenseLog> expenses)
     {
@@ -45,7 +47,7 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
         File.WriteAllText(_options.CurrentYearReportFile, markdown);
     }
 
-    private static IEnumerable<ExpenseLog> ParseExpenseFile(string file)
+    private static IEnumerable<ExpenseLog> ParseExpenseFile(string file, int year)
     {
         if (!File.Exists(file)) return [];
         return Utils.ParseCsv(File.ReadLines(file), parts =>
@@ -58,7 +60,7 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
                 Console.Error.WriteLine($"[ExpenseRepository] Skipping malformed row: '{string.Join(",", parts)}'");
                 return null;
             }
-            return new ExpenseLog(Month: month, Day: day, Category: parts[2].ToLower(), Amount: amount, Description: parts[4]);
+            return new ExpenseLog(Year: year, Month: month, Day: day, Category: parts[2].ToLower(), Amount: amount, Description: parts[4]);
         }).OfType<ExpenseLog>();
     }
 }

@@ -9,7 +9,7 @@ public class ExpenseRepositoryTests
 {
     private static ExpenseRepository CreateRepository(string filePath) =>
         new ExpenseRepository(
-            Options.Create(new ExpenseOptions { CurrentYearDataFile = filePath }));
+            Options.Create(new ExpenseOptions { CurrentYearDataFile = filePath, CurrentYear = 2026 }));
 
     private static string WriteTempCsv(params string[] rows)
     {
@@ -81,7 +81,7 @@ public class ExpenseRepositoryTests
         try
         {
             var repository = CreateRepository(tempFile);
-            var expense = new ExpenseLog(3, 7, "food", 45.50m, "groceries");
+            var expense = new ExpenseLog(2026, 3, 7, "food", 45.50m, "groceries");
             repository.AppendExpenses([expense]);
 
             var reparsed = repository.ReadCurrentYearExpenses().Single();
