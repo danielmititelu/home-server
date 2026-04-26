@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Vaultling.Utils;
 
-public partial class CalendarRepository(IOptions<CalendarOptions> options, ExpenseRepository expenseRepository)
+public partial class CalendarRepository(IOptions<CalendarOptions> options, ExpenseRepository expenseRepository, TimeProvider timeProvider)
 {
     [GeneratedRegex(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled)]
     private static partial Regex DateInDescriptionRegex();
@@ -20,6 +20,7 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
 
     private readonly CalendarOptions _options = options.Value;
     private readonly ExpenseRepository _expenseRepository = expenseRepository;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     private static readonly Dictionary<string, DayOfWeek> DayNameToWeekday =
         Enum.GetValues<DayOfWeek>().ToDictionary(
@@ -70,7 +71,19 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
         var expenseEventOccurrences = ReadExpenseEvents(year);
         var reportOccurrences = ReadReportOccurrences(year);
 
-        return MergeOccurrences(regularOccurrences.Concat(cycleOccurrences).Concat(expenseEventOccurrences), reportOccurrences)
+        var cycleBaseNotes = recurringEvents
+            .OfType<WeeklyRecurringEvent>()
+            .Where(e => e.CycleCount.HasValue && e.CycleExpenseCategory != null)
+            .Select(e => e.Note.Trim().ToLowerInvariant())
+            .ToHashSet();
+
+        var today = _timeProvider.GetLocalNow().Date;
+
+        return MergeOccurrences(
+                regularOccurrences.Concat(cycleOccurrences).Concat(expenseEventOccurrences),
+                reportOccurrences,
+                cycleBaseNotes,
+                today)
             .OrderBy(o => o.Date);
     }
 
@@ -163,16 +176,32 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
     internal static IEnumerable<CalendarOccurrence> GetCycleOccurrences(WeeklyRecurringEvent weekly, DateTime expenseDate)
     {
         var count = weekly.CycleCount!.Value;
-        var current = expenseDate.Date;
-        while (current.DayOfWeek != weekly.Day)
-            current = current.AddDays(1);
+        var time = weekly.Time.ToTimeSpan();
 
-        for (var i = 0; i <= count; i++)
+        // 1/N: anchored on the expense day itself at the schedule time.
+        yield return new CalendarOccurrence(expenseDate.Date.Add(time), $"{weekly.Note} 1/{count}");
+
+        // 2/N..N/N + speculative 1/N: schedule weekday in the ISO week (Mon-Sun)
+        // *after* the expense's ISO week, then weekly thereafter.
+        var nextWeekStart = StartOfIsoWeek(expenseDate.Date).AddDays(7);
+        var dayOffset = ((int)weekly.Day - (int)DayOfWeek.Monday + 7) % 7;
+        var current = nextWeekStart.AddDays(dayOffset);
+
+        for (var i = 2; i <= count; i++)
         {
-            var number = (i == count) ? 1 : i + 1; // last one is the speculative 1/N
-            yield return new CalendarOccurrence(current.Add(weekly.Time.ToTimeSpan()), $"{weekly.Note} {number}/{count}");
+            yield return new CalendarOccurrence(current.Add(time), $"{weekly.Note} {i}/{count}");
             current = current.AddDays(7);
         }
+
+        // Speculative next-cycle 1/N
+        yield return new CalendarOccurrence(current.Add(time), $"{weekly.Note} 1/{count}");
+    }
+
+    private static DateTime StartOfIsoWeek(DateTime d)
+    {
+        // ISO week starts on Monday.
+        var offset = ((int)d.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+        return d.Date.AddDays(-offset);
     }
 
     internal IEnumerable<CalendarOccurrence> ReadReportOccurrences(int year)
@@ -258,20 +287,93 @@ public partial class CalendarRepository(IOptions<CalendarOptions> options, Expen
         return null;
     }
 
+    private enum OccurrenceSource { Recurring, Report }
+
+    private static string BaseNote(string note) =>
+        CycleNumberRegex().Replace(note.Trim(), "").ToLowerInvariant();
+
     private static IEnumerable<CalendarOccurrence> MergeOccurrences(
         IEnumerable<CalendarOccurrence> recurringOccurrences,
-        IEnumerable<CalendarOccurrence> reportOccurrences)
+        IEnumerable<CalendarOccurrence> reportOccurrences,
+        HashSet<string> cycleBaseNotes,
+        DateTime today)
     {
-        // Report events override recurring events matched by date + base note (stripping X/N suffix).
-        // Strikethrough entries in the report cancel the matching recurring event.
-        // Non-matching report events are user-added single events.
-        return recurringOccurrences
-            .Concat(reportOccurrences)
-            .GroupBy(o => new
+        // Tag every occurrence with its source so the merge can distinguish
+        // freshly-computed entries from entries already written to the report.
+        var tagged = recurringOccurrences
+            .Select(o => (Source: OccurrenceSource.Recurring, Occ: o))
+            .Concat(reportOccurrences.Select(o => (Source: OccurrenceSource.Report, Occ: o)))
+            .GroupBy(x => BaseNote(x.Occ.Note));
+
+        foreach (var byBase in tagged)
+        {
+            var baseNote = byBase.Key;
+            var entries = byBase.ToList();
+
+            if (!cycleBaseNotes.Contains(baseNote))
             {
-                o.Date,
-                Note = CycleNumberRegex().Replace(o.Note.Trim(), "").ToLowerInvariant()
-            })
-            .Select(g => g.FirstOrDefault(o => o.Cancelled) ?? g.Last());
+                // Non-cycle: original behaviour. Cancellation in the bucket wins;
+                // otherwise the report entry (concatenated last) wins.
+                foreach (var dateGroup in entries.GroupBy(x => x.Occ.Date))
+                {
+                    var cancelled = dateGroup.FirstOrDefault(x => x.Occ.Cancelled);
+                    yield return cancelled.Occ ?? dateGroup.Last().Occ;
+                }
+                continue;
+            }
+
+            // Cycle: detect manual-edit weeks (strike + non-strike of the same
+            // base-note in the same ISO week — the user cancelled the canonical
+            // entry and rescheduled within the week).
+            var manualEditWeeks = entries
+                .Where(x => x.Source == OccurrenceSource.Report)
+                .GroupBy(x => StartOfIsoWeek(x.Occ.Date))
+                .Where(g => g.Any(x => x.Occ.Cancelled) && g.Any(x => !x.Occ.Cancelled))
+                .Select(g => g.Key)
+                .ToHashSet();
+
+            foreach (var weekGroup in entries.GroupBy(x => StartOfIsoWeek(x.Occ.Date)))
+            {
+                if (manualEditWeeks.Contains(weekGroup.Key))
+                {
+                    // Preserve everything the user wrote in the report; drop the
+                    // freshly-computed recurring entries entirely for this week.
+                    foreach (var x in weekGroup.Where(x => x.Source == OccurrenceSource.Report))
+                        yield return x.Occ;
+                    continue;
+                }
+
+                foreach (var dateGroup in weekGroup.GroupBy(x => x.Occ.Date))
+                {
+                    var cancelled = dateGroup.FirstOrDefault(x => x.Occ.Cancelled);
+                    if (cancelled.Occ != null)
+                    {
+                        // Report cancellation wins (lone strike suppresses fresh entry).
+                        yield return cancelled.Occ;
+                        continue;
+                    }
+
+                    var hasReport = dateGroup.Any(x => x.Source == OccurrenceSource.Report);
+                    var hasRecurring = dateGroup.Any(x => x.Source == OccurrenceSource.Recurring);
+
+                    if (dateGroup.Key < today)
+                    {
+                        // Past is immutable: keep what the report said; if no report
+                        // entry exists yet (first run) fall back to the fresh value.
+                        if (hasReport)
+                            yield return dateGroup.First(x => x.Source == OccurrenceSource.Report).Occ;
+                        else if (hasRecurring)
+                            yield return dateGroup.First(x => x.Source == OccurrenceSource.Recurring).Occ;
+                    }
+                    else
+                    {
+                        // Today/future: re-anchor — fresh recurring wins, stale
+                        // future report entries with no fresh counterpart are dropped.
+                        if (hasRecurring)
+                            yield return dateGroup.First(x => x.Source == OccurrenceSource.Recurring).Occ;
+                    }
+                }
+            }
+        }
     }
 }

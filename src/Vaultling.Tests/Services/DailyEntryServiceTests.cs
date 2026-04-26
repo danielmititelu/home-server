@@ -85,7 +85,8 @@ public class DailyEntryServiceTests
                 })),
                 new CalendarRepository(
                     Options.Create(new CalendarOptions()),
-                    new ExpenseRepository(Options.Create(new ExpenseOptions()))),
+                    new ExpenseRepository(Options.Create(new ExpenseOptions())),
+                    TimeProvider.System),
                 CreateStubWeatherRepository(),
                 TimeProvider.System);
 
@@ -275,7 +276,8 @@ public class DailyEntryServiceTests
                 })),
                 new CalendarRepository(
                     Options.Create(new CalendarOptions()),
-                    new ExpenseRepository(Options.Create(new ExpenseOptions()))),
+                    new ExpenseRepository(Options.Create(new ExpenseOptions())),
+                    TimeProvider.System),
                 CreateStubWeatherRepository(),
                 TimeProvider.System);
 

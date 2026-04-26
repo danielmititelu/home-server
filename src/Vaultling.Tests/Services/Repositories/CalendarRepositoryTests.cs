@@ -2,27 +2,32 @@ using Microsoft.Extensions.Options;
 using Vaultling.Configuration;
 using Vaultling.Models;
 using Vaultling.Services.Repositories;
+using Vaultling.Tests.Helpers;
 
 namespace Vaultling.Tests;
 
 public class CalendarRepositoryTests
 {
+    // Default "today" pins the clock far in the future so the legacy tests
+    // see every report entry as immutable past.
+    private static readonly DateTime FarFuture = new(9999, 1, 1);
+
     private static ExpenseRepository MakeExpenseRepository(string dataFile = "", string previousYearDataFile = "", int currentYear = 2026)
         => new(Options.Create(new ExpenseOptions { CurrentYearDataFile = dataFile, PreviousYearDataFile = previousYearDataFile, CurrentYear = currentYear }));
 
-    private static CalendarRepository MakeRepository(string eventsFile, string reportFile = "", string expenseDataFile = "")
-        => MakeRepository(eventsFile, reportFile, MakeExpenseRepository(expenseDataFile));
+    private static CalendarRepository MakeRepository(string eventsFile, string reportFile = "", string expenseDataFile = "", DateTime? today = null)
+        => MakeRepository(eventsFile, reportFile, MakeExpenseRepository(expenseDataFile), today);
 
-    private static CalendarRepository MakeRepository(string eventsFile, ExpenseRepository expenseRepository)
-        => MakeRepository(eventsFile, "", expenseRepository);
+    private static CalendarRepository MakeRepository(string eventsFile, ExpenseRepository expenseRepository, DateTime? today = null)
+        => MakeRepository(eventsFile, "", expenseRepository, today);
 
-    private static CalendarRepository MakeRepository(string eventsFile, string reportFile, ExpenseRepository expenseRepository)
+    private static CalendarRepository MakeRepository(string eventsFile, string reportFile, ExpenseRepository expenseRepository, DateTime? today = null)
     {
         return new CalendarRepository(Options.Create(new CalendarOptions
         {
             EventsFile = eventsFile,
             ReportFileTemplate = reportFile,
-        }), expenseRepository);
+        }), expenseRepository, new FakeTimeProvider(today ?? FarFuture));
     }
 
     [Fact]
@@ -467,6 +472,336 @@ public class CalendarRepositoryTests
         Assert.Equal(new DateTime(2026, 1, 15, 18, 0, 0), occurrences[2].Date);
         Assert.Equal(new DateTime(2026, 1, 22, 18, 0, 0), occurrences[3].Date);
         Assert.Equal(new DateTime(2026, 1, 29, 18, 0, 0), occurrences[4].Date);
+    }
+
+    [Fact]
+    public void GetCycleOccurrences_ExpenseOnNonScheduleDay_AnchorsFirstOnExpense()
+    {
+        // Sunday April 19 2026, schedule = Thursday.
+        // 1/4 must land on the expense day; 2/4 on Thursday in the next ISO week.
+        var recurring = new WeeklyRecurringEvent(
+            DayOfWeek.Thursday, new TimeOnly(18, 0), "Piano lesson",
+            CycleCount: 4, CycleExpenseCategory: "hobby", CycleExpenseDesc: "pian");
+        var occurrences = CalendarRepository.GetCycleOccurrences(recurring, new DateTime(2026, 4, 19)).ToList();
+
+        Assert.Equal(5, occurrences.Count);
+        Assert.Equal(new DateTime(2026, 4, 19, 18, 0, 0), occurrences[0].Date);
+        Assert.Equal(new DateTime(2026, 4, 23, 18, 0, 0), occurrences[1].Date);
+        Assert.Equal(new DateTime(2026, 4, 30, 18, 0, 0), occurrences[2].Date);
+        Assert.Equal(new DateTime(2026, 5,  7, 18, 0, 0), occurrences[3].Date);
+        Assert.Equal(new DateTime(2026, 5, 14, 18, 0, 0), occurrences[4].Date);
+    }
+
+    [Fact]
+    public void GetCycleOccurrences_ExpenseOnFridaySchedulesNextWeekThursday()
+    {
+        // Friday April 17 2026 expense, schedule Thursday.
+        // 2/4 must skip same-week Thursday (Apr 23 is in the next ISO week, so it qualifies).
+        var recurring = new WeeklyRecurringEvent(
+            DayOfWeek.Thursday, new TimeOnly(18, 0), "Piano lesson",
+            CycleCount: 4, CycleExpenseCategory: "hobby", CycleExpenseDesc: "pian");
+        var occurrences = CalendarRepository.GetCycleOccurrences(recurring, new DateTime(2026, 4, 17)).ToList();
+
+        Assert.Equal(new DateTime(2026, 4, 17, 18, 0, 0), occurrences[0].Date);
+        Assert.Equal(new DateTime(2026, 4, 23, 18, 0, 0), occurrences[1].Date);
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_Reanchor_FutureCycleEntriesAreReplaced()
+    {
+        // today = Apr 15 2026 (Wed). New expense on Tue Apr 7 re-anchors the cycle;
+        // the old future entries for Apr 9 onwards must be replaced by the fresh ones.
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, [
+                "schedule,note,cycle-count,cycle-expense",
+                "thursday at 18:00,Piano lesson,4,hobby:pian"
+            ]);
+
+            // Latest expense: Tue Apr 7 (non-schedule day)
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "4,7,hobby,400,pian"
+            ]);
+
+            // Existing report contains a stale OLD cycle from a Mar 12 expense:
+            // 1/4 Mar 12, 2/4 Mar 19, 3/4 Mar 26, 4/4 Apr 2, spec 1/4 Apr 9.
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 03 - March",
+                "",
+                "- 12 at 18:00: Piano lesson 1/4",
+                "- 19 at 18:00: Piano lesson 2/4",
+                "- 26 at 18:00: Piano lesson 3/4",
+                "",
+                "## 04 - April",
+                "",
+                "- 02 at 18:00: Piano lesson 4/4",
+                "- 09 at 18:00: Piano lesson 1/4"
+            ]);
+
+            var occurrences = MakeRepository(
+                    eventsFile,
+                    Path.Combine(tempDir, "{year}-calendar-report.md"),
+                    MakeExpenseRepository(dataFile: expenseFile),
+                    today: new DateTime(2026, 4, 15))
+                .CollectCalendarOccurrencesForYear(2026)
+                .ToList();
+
+            // Past entries from the report are preserved verbatim.
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 12, 18, 0, 0) && o.Note == "Piano lesson 1/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 19, 18, 0, 0) && o.Note == "Piano lesson 2/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 26, 18, 0, 0) && o.Note == "Piano lesson 3/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4,  2, 18, 0, 0) && o.Note == "Piano lesson 4/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4,  9, 18, 0, 0) && o.Note == "Piano lesson 1/4");
+
+            // Fresh re-anchored entries for the new cycle (Apr 7 expense).
+            // Apr 7 is past too — no report entry there, so the fresh value is emitted.
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4,  7, 18, 0, 0) && o.Note == "Piano lesson 1/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4, 16, 18, 0, 0) && o.Note == "Piano lesson 2/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4, 23, 18, 0, 0) && o.Note == "Piano lesson 3/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4, 30, 18, 0, 0) && o.Note == "Piano lesson 4/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 5,  7, 18, 0, 0) && o.Note == "Piano lesson 1/4");
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_Reanchor_ScheduleWeekdayChange_PreservesPast()
+    {
+        // today = Apr 15 2026. Old report has a Thursday cycle. Schedule changes to
+        // Wednesday; past Thursday entries stay, future Wednesday entries appear.
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            // Schedule now Wednesday.
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, [
+                "schedule,note,cycle-count,cycle-expense",
+                "wednesday at 18:00,Piano lesson,4,hobby:pian"
+            ]);
+
+            // Latest expense Wed Apr 8 → 1/4 Apr 8 (past), 2/4 Wed Apr 15 (today),
+            // 3/4 Apr 22, 4/4 Apr 29, spec May 6.
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "4,8,hobby,400,pian"
+            ]);
+
+            // Old report from when schedule was Thursday: past Thursday entries.
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 03 - March",
+                "",
+                "- 12 at 18:00: Piano lesson 1/4",
+                "- 19 at 18:00: Piano lesson 2/4",
+                "- 26 at 18:00: Piano lesson 3/4",
+                "",
+                "## 04 - April",
+                "",
+                "- 02 at 18:00: Piano lesson 4/4"
+            ]);
+
+            var occurrences = MakeRepository(
+                    eventsFile,
+                    Path.Combine(tempDir, "{year}-calendar-report.md"),
+                    MakeExpenseRepository(dataFile: expenseFile),
+                    today: new DateTime(2026, 4, 15))
+                .CollectCalendarOccurrencesForYear(2026)
+                .ToList();
+
+            // Old Thursday entries (all past) preserved.
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 12, 18, 0, 0));
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 19, 18, 0, 0));
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 26, 18, 0, 0));
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4,  2, 18, 0, 0));
+
+            // New Wednesday cycle: Apr 8 (past, no report entry → fresh), then today
+            // and future Wednesdays.
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4,  8, 18, 0, 0) && o.Note == "Piano lesson 1/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4, 15, 18, 0, 0) && o.Note == "Piano lesson 2/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4, 22, 18, 0, 0) && o.Note == "Piano lesson 3/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4, 29, 18, 0, 0) && o.Note == "Piano lesson 4/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 5,  6, 18, 0, 0) && o.Note == "Piano lesson 1/4");
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_Reanchor_ManuallyEditedWeekIsPreserved()
+    {
+        // today = Apr 1 2026. Schedule Thursday, expense Mar 12 → 2/4 lands Mar 19 (Thu).
+        // The user struck out 2/4 on Mar 19 and rescheduled to Mar 17 (Tue) in the same
+        // ISO week. Both must be kept; no fresh Mar 19 entry should be re-added.
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, [
+                "schedule,note,cycle-count,cycle-expense",
+                "thursday at 18:00,Piano lesson,4,hobby:pian"
+            ]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "3,12,hobby,400,pian"
+            ]);
+
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 03 - March",
+                "",
+                "- ~~19 at 18:00: Piano lesson 2/4~~",
+                "- 17 at 18:00: Piano lesson 2/4"
+            ]);
+
+            // today = early enough that Mar 19 is still in the FUTURE — to prove the
+            // manual-edit rule (not the past-immutable rule) is what preserves them.
+            var occurrences = MakeRepository(
+                    eventsFile,
+                    Path.Combine(tempDir, "{year}-calendar-report.md"),
+                    MakeExpenseRepository(dataFile: expenseFile),
+                    today: new DateTime(2026, 3, 1))
+                .CollectCalendarOccurrencesForYear(2026)
+                .ToList();
+
+            // Manual-edit week: both report entries kept exactly.
+            var mar17 = occurrences.Single(o => o.Date == new DateTime(2026, 3, 17, 18, 0, 0));
+            Assert.False(mar17.Cancelled);
+            Assert.Equal("Piano lesson 2/4", mar17.Note);
+
+            var mar19 = occurrences.Single(o => o.Date == new DateTime(2026, 3, 19, 18, 0, 0));
+            Assert.True(mar19.Cancelled);
+            Assert.Equal("Piano lesson 2/4", mar19.Note);
+
+            // Other cycle entries from the fresh recurring stream are still there.
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 12, 18, 0, 0) && o.Note == "Piano lesson 1/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 26, 18, 0, 0) && o.Note == "Piano lesson 3/4");
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 4,  2, 18, 0, 0) && o.Note == "Piano lesson 4/4");
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_Reanchor_LoneFutureStrikethroughSuppresses()
+    {
+        // today = Mar 1 2026. Cycle gives 3/4 on Mar 26. The user struck out that
+        // single entry without a replacement; the merge must keep the cancellation
+        // and not re-add a fresh non-strike entry on the same date.
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, [
+                "schedule,note,cycle-count,cycle-expense",
+                "thursday at 18:00,Piano lesson,4,hobby:pian"
+            ]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "3,12,hobby,400,pian"
+            ]);
+
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 03 - March",
+                "",
+                "- ~~26 at 18:00: Piano lesson 3/4~~"
+            ]);
+
+            var occurrences = MakeRepository(
+                    eventsFile,
+                    Path.Combine(tempDir, "{year}-calendar-report.md"),
+                    MakeExpenseRepository(dataFile: expenseFile),
+                    today: new DateTime(2026, 3, 1))
+                .CollectCalendarOccurrencesForYear(2026)
+                .ToList();
+
+            var mar26 = occurrences.Single(o => o.Date == new DateTime(2026, 3, 26, 18, 0, 0));
+            Assert.True(mar26.Cancelled);
+            Assert.Equal("Piano lesson 3/4", mar26.Note);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadCalendarOccurrences_Reanchor_PastReportEntryNeverRewritten()
+    {
+        // today = May 1 2026. Old report says 2/4 was on Mar 17 (rescheduled by hand
+        // in the past — user actually went on Tue not Thu). New cycle would put
+        // 2/4 on Thu Mar 19. Past entry must win; no Mar 19 entry should appear.
+        var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-calendar-{Guid.NewGuid()}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var eventsFile = Path.Combine(tempDir, "events-csv.md");
+            File.WriteAllLines(eventsFile, [
+                "schedule,note,cycle-count,cycle-expense",
+                "thursday at 18:00,Piano lesson,4,hobby:pian"
+            ]);
+
+            var expenseFile = Path.Combine(tempDir, "2026-expenses-csv.md");
+            File.WriteAllLines(expenseFile, [
+                "month,day,category,amount,description",
+                "3,12,hobby,400,pian"
+            ]);
+
+            var reportFile = Path.Combine(tempDir, "2026-calendar-report.md");
+            File.WriteAllLines(reportFile, [
+                "## 03 - March",
+                "",
+                "- ~~19 at 18:00: Piano lesson 2/4~~",
+                "- 17 at 18:00: Piano lesson 2/4"
+            ]);
+
+            var occurrences = MakeRepository(
+                    eventsFile,
+                    Path.Combine(tempDir, "{year}-calendar-report.md"),
+                    MakeExpenseRepository(dataFile: expenseFile),
+                    today: new DateTime(2026, 5, 1))
+                .CollectCalendarOccurrencesForYear(2026)
+                .ToList();
+
+            // Past manual edits preserved verbatim.
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 17, 18, 0, 0) && !o.Cancelled);
+            Assert.Contains(occurrences, o => o.Date == new DateTime(2026, 3, 19, 18, 0, 0) && o.Cancelled);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
     }
 
     [Theory]
