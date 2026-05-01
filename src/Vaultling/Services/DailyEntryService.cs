@@ -21,16 +21,16 @@ public class DailyEntryService(
             return;
         }
 
-        workoutRepository.AppendWorkout(yesterdayEntry.Workouts
+        var workoutLogs = yesterdayEntry.Workouts
             .Where(w => !string.IsNullOrWhiteSpace(w.Reps))
             .Select(w => new WorkoutLog(
                 Month: yesterdayEntry.Date.Month,
                 Day: yesterdayEntry.Date.Day,
                 Type: w.Exercise,
                 Reps: w.Reps.Replace(',', '-')
-            )));
+            ));
 
-        expenseRepository.AppendExpenses(yesterdayEntry.Expenses
+        var expenseLogs = yesterdayEntry.Expenses
             .Where(e => e.Amount > 0)
             .Select(e => new ExpenseLog(
                 Year: yesterdayEntry.Date.Year,
@@ -39,9 +39,7 @@ public class DailyEntryService(
                 Category: e.Category,
                 Amount: e.Amount,
                 Description: e.Description
-            )));
-
-        dailyEntryRepository.ArchiveDailyFile(yesterdayEntry.Date);
+            ));
 
         var todayWorkouts = workoutRepository.GetTodayWorkout();
         var carryOverTodos = yesterdayEntry.Todos
@@ -62,7 +60,12 @@ public class DailyEntryService(
             CalendarEvents: calendarEvents,
             City: city
         );
-        dailyEntryRepository.WriteDailyEntry(GenerateMarkdownForDailyEntry(newTodayEntry, weather));
+        var newTodayMarkdown = GenerateMarkdownForDailyEntry(newTodayEntry, weather);
+
+        workoutRepository.AppendWorkout(workoutLogs);
+        expenseRepository.AppendExpenses(expenseLogs);
+        dailyEntryRepository.ArchiveDailyFile(yesterdayEntry.Date);
+        dailyEntryRepository.WriteDailyEntry(newTodayMarkdown);
     }
 
     public static string GenerateMarkdownForDailyEntry(DailyEntry dailyEntry, WeatherInfo? weather = null)
