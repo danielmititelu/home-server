@@ -5,7 +5,6 @@ public class DailyEntryService(
     DailyEntryRepository dailyEntryRepository,
     WorkoutRepository workoutRepository,
     ExpenseRepository expenseRepository,
-    CalendarRepository calendarRepository,
     WeatherRepository weatherRepository,
     TimeProvider timeProvider)
 {
@@ -44,12 +43,9 @@ public class DailyEntryService(
         var todayWorkouts = workoutRepository.GetTodayWorkout();
         var carryOverTodos = yesterdayEntry.Todos
             .Where(t => !t.Contains("[x]", StringComparison.OrdinalIgnoreCase));
-        
-        var currentYear = now.Year;
-        var calendarEvents = calendarRepository.CollectCalendarOccurrencesForYear(currentYear);
-        
+
         var city = yesterdayEntry.City;
-        var travelCity = calendarRepository.GetTravelCityForDate(now.Date);
+        var travelCity = expenseRepository.GetTravelCityForDate(now.Date);
         var weather = await weatherRepository.FetchWeatherAsync(travelCity ?? city);
 
         var newTodayEntry = new DailyEntry(
@@ -57,7 +53,6 @@ public class DailyEntryService(
             Workouts: todayWorkouts,
             Todos: carryOverTodos,
             Expenses: [],
-            CalendarEvents: calendarEvents,
             City: city
         );
         var newTodayMarkdown = GenerateMarkdownForDailyEntry(newTodayEntry, weather);
@@ -75,20 +70,6 @@ public class DailyEntryService(
         var todoLines = todoItems.Count > 0
             ? string.Join("\n", todoItems)
             : "- [ ]";
-        var today = dailyEntry.Date.Date;
-        var calendarReportLink = Utils.GetCalendarReportMonthLink(dailyEntry.Date.DateTime);
-        var upcomingEvents = (dailyEntry.CalendarEvents ?? [])
-            .Where(e => e.Date > dailyEntry.Date.DateTime && e.Date <= dailyEntry.Date.DateTime.AddDays(14))
-            .OrderBy(e => e.Date);
-        var calendarLines = upcomingEvents.Any()
-            ? string.Join("\n", upcomingEvents.Select(e =>
-            {
-                var dateTimeLabel = Utils.GetRelativeDateTimeLabel(e.Date, today);
-                var eventText = $"{dateTimeLabel}: {e.Note}";
-                var renderedEventText = e.Cancelled ? $"~~{eventText}~~" : eventText;
-                return renderedEventText;
-            }))
-            : "";
 
         var weatherLines = weather is { Summary: not null, Sunrise: not null, Sunset: not null }
             ? $"{weather.City}\n{weather.Summary}\n🌅 {weather.Sunrise} 🌇 {weather.Sunset}"
@@ -100,10 +81,6 @@ public class DailyEntryService(
 
             # {DailySectionName.Weather}
             {weatherLines}
-
-            # {DailySectionName.Calendar}
-            {calendarLines}
-            {calendarReportLink}
 
             # {DailySectionName.Workout}
             exercise,reps

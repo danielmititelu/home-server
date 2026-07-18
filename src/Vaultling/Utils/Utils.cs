@@ -29,58 +29,6 @@ public static class Utils
         return pathTemplate.Replace("{year}", year.ToString(CultureInfo.InvariantCulture));
     }
 
-    private static readonly CultureInfo Romanian = new("ro-RO");
-
-    public static string GetRelativeDateLabel(DateTime eventDate, DateTime today)
-    {
-        var dayOffset = (eventDate.Date - today.Date).Days;
-
-        return dayOffset switch
-        {
-            0 => "Azi",
-            1 => "Mâine",
-            < 7 => CapitalizeFirst(eventDate.ToString("dddd", Romanian)),
-            _ => $"{GetArticulatedDayName(eventDate)} următoare"
-        };
-    }
-
-    public static string GetRelativeDateTimeLabel(DateTime eventDate, DateTime today)
-    {
-        var dateLabel = GetRelativeDateLabel(eventDate, today);
-        var timeLabel = eventDate.TimeOfDay == TimeSpan.Zero
-            ? ""
-            : $" la {eventDate:HH:mm}";
-
-        return $"{dateLabel}{timeLabel}";
-    }
-
-    public static string GetCalendarReportMonthAnchor(int year, int month)
-    {
-        var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month);
-        return $"{month:00} - {monthName}";
-    }
-
-    public static string GetCalendarReportMonthLink(DateTime date)
-    {
-        var anchor = GetCalendarReportMonthAnchor(date.Year, date.Month);
-        return $"[[{date.Year}-calendar-report#{anchor} 🔵|toate evenimentele]]";
-    }
-
-    private static string CapitalizeFirst(string s) =>
-        string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s[1..];
-
-    private static string GetArticulatedDayName(DateTime date) => date.DayOfWeek switch
-    {
-        DayOfWeek.Monday => "Lunea",
-        DayOfWeek.Tuesday => "Marțea",
-        DayOfWeek.Wednesday => "Miercurea",
-        DayOfWeek.Thursday => "Joia",
-        DayOfWeek.Friday => "Vinerea",
-        DayOfWeek.Saturday => "Sâmbăta",
-        DayOfWeek.Sunday => "Duminica",
-        _ => CapitalizeFirst(date.ToString("dddd", Romanian))
-    };
-
     public static string BuildMonthlyCalendar(
         int year,
         int month,

@@ -3,8 +3,7 @@ namespace Vaultling.Services;
 public class VaultlingRunner(
     DailyEntryService dailyEntryService,
     WorkoutService workoutService,
-    ExpenseService expenseService,
-    CalendarService calendarService)
+    ExpenseService expenseService)
 {
     public async Task RunAsync()
     {
@@ -14,7 +13,6 @@ public class VaultlingRunner(
             await dailyEntryService.ProcessDailyEntryAsync();
             workoutService.ProduceWorkoutReport();
             expenseService.ProduceExpenseReport();
-            calendarService.ProduceCalendarReport();
         }
         catch (Exception ex)
         {

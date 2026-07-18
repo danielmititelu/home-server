@@ -13,7 +13,6 @@ var services = new ServiceCollection();
 services.Configure<DailyEntryOptions>(configuration.GetSection("DailyEntry"));
 services.Configure<WorkoutOptions>(configuration.GetSection("Workout"));
 services.Configure<ExpenseOptions>(configuration.GetSection("Expense"));
-services.Configure<CalendarOptions>(configuration.GetSection("Calendar"));
 services.PostConfigure<WorkoutOptions>(opts =>
 {
     opts.CurrentYearLogFile = Utils.ResolveYearPath(opts.LogFileTemplate, currentYear);
@@ -30,12 +29,10 @@ services.AddSingleton(TimeProvider.System);
 services.AddSingleton<DailyEntryRepository>();
 services.AddSingleton<WorkoutRepository>();
 services.AddSingleton<ExpenseRepository>();
-services.AddSingleton<CalendarRepository>();
 services.AddHttpClient<WeatherRepository>();
 services.AddTransient<DailyEntryService>();
 services.AddTransient<WorkoutService>();
 services.AddTransient<ExpenseService>();
-services.AddTransient<CalendarService>();
 services.AddTransient<VaultlingRunner>();
 
 var provider = services.BuildServiceProvider();

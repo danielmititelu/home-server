@@ -52,7 +52,7 @@ public class DailyEntryRepository(IOptions<DailyEntryOptions> options)
             : [];
         var city = weatherSection.FirstOrDefault() ?? "";
 
-        return new DailyEntry(date, workouts, todos, expenses, [], City: city);
+        return new DailyEntry(date, workouts, todos, expenses, City: city);
     }
 
     public void ArchiveDailyFile(DateTimeOffset date)

@@ -8,8 +8,7 @@ public enum DailySectionName
     Weather,
     Workout,
     Todo,
-    Expenses,
-    Calendar
+    Expenses
 }
 
 public record DailyEntry(
@@ -17,5 +16,4 @@ public record DailyEntry(
     IEnumerable<DailyWorkout> Workouts,
     IEnumerable<string> Todos,
     IEnumerable<DailyExpense> Expenses,
-    IEnumerable<CalendarOccurrence>? CalendarEvents = null,
     string City = "");

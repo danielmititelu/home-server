@@ -83,10 +83,6 @@ public class DailyEntryServiceTests
                 {
                     CurrentYearDataFile = expenseFile
                 })),
-                new CalendarRepository(
-                    Options.Create(new CalendarOptions()),
-                    new ExpenseRepository(Options.Create(new ExpenseOptions())),
-                    TimeProvider.System),
                 CreateStubWeatherRepository(),
                 TimeProvider.System);
 
@@ -127,7 +123,6 @@ public class DailyEntryServiceTests
             Workouts: [new DailyWorkout("pushups", "20-20-20"), new DailyWorkout("squats", "20-20-20")],
             Todos: ["Buy milk", "[x] Clean kitchen"],
             Expenses: [new DailyExpense("food", 45.50m, "groceries"), new DailyExpense("transport", 12.00m, "bus")],
-            CalendarEvents: [],
             City: "Bucharest");
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(original);
@@ -143,41 +138,13 @@ public class DailyEntryServiceTests
     }
 
     [Fact]
-    public void GenerateMarkdownForDailyEntry_UsesRelativeCalendarLabels()
-    {
-        var entryDate = new DateTimeOffset(2026, 3, 26, 9, 0, 0, TimeSpan.Zero);
-        var entry = new DailyEntry(
-            Date: entryDate,
-            Workouts: [],
-            Todos: [],
-            Expenses: [],
-            CalendarEvents:
-            [
-                new CalendarOccurrence(new DateTime(2026, 3, 26, 18, 0, 0), "Piano lesson"),
-                new CalendarOccurrence(new DateTime(2026, 3, 27, 20, 0, 0), "Movie night"),
-                new CalendarOccurrence(new DateTime(2026, 3, 28, 0, 0, 0), "Picnic", true),
-                new CalendarOccurrence(new DateTime(2026, 4, 2, 18, 0, 0), "Piano lesson")
-            ]);
-
-        var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry);
-
-        var expectedCalendarLink = Utils.Utils.GetCalendarReportMonthLink(entryDate.DateTime);
-        Assert.Contains(expectedCalendarLink, markdown);
-        Assert.Contains("Azi la 18:00: Piano lesson", markdown);
-        Assert.Contains("Mâine la 20:00: Movie night", markdown);
-        Assert.Contains("~~Sâmbătă: Picnic~~", markdown);
-        Assert.Contains("Joia următoare la 18:00: Piano lesson", markdown);
-    }
-
-    [Fact]
     public void GenerateMarkdownForDailyEntry_AddsDefaultTodo_WhenTodosAreEmpty()
     {
         var entry = new DailyEntry(
             Date: new DateTimeOffset(2026, 3, 26, 9, 0, 0, TimeSpan.Zero),
             Workouts: [],
             Todos: [],
-            Expenses: [],
-            CalendarEvents: []);
+            Expenses: []);
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry);
 
@@ -193,7 +160,6 @@ public class DailyEntryServiceTests
             Workouts: [],
             Todos: [],
             Expenses: [],
-            CalendarEvents: [],
             City: "Bucharest");
         var weather = new WeatherInfo("Bucharest", "\u2600\ufe0f 18\u00b0C, Clear sky", "06:15", "19:50");
 
@@ -213,7 +179,6 @@ public class DailyEntryServiceTests
             Workouts: [],
             Todos: [],
             Expenses: [],
-            CalendarEvents: [],
             City: "Bucharest");
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather: null);
@@ -274,10 +239,6 @@ public class DailyEntryServiceTests
                 {
                     CurrentYearDataFile = expenseFile
                 })),
-                new CalendarRepository(
-                    Options.Create(new CalendarOptions()),
-                    new ExpenseRepository(Options.Create(new ExpenseOptions())),
-                    TimeProvider.System),
                 CreateStubWeatherRepository(),
                 TimeProvider.System);
 
