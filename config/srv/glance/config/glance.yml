@@ -32,7 +32,3 @@ pages:
                 url: http://192.168.1.1
                 check-url: http://192.168.1.1
                 icon: sh:openwrt
-              - title: cudy
-                url: http://192.168.1.120
-                check-url: http://192.168.1.120
-                icon: sh:openrouter
