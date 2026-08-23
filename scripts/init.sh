@@ -40,7 +40,6 @@ usermod -aG docker pi || true
 
 LOG "Creating /srv folder layout"
 mkdir -p \
-  /srv/samba/backup \
   /srv/samba/MyVault \
   /srv/homeassistant/config \
   /srv/vaultwarden \

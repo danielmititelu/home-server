@@ -6,6 +6,13 @@ set -e
 . /home-server/.env
 export RESTIC_PASSWORD
 
+BACKUP_ROOT=/mnt/backup
+
+if ! mountpoint -q "$BACKUP_ROOT"; then
+  echo "ERROR: $BACKUP_ROOT is not mounted, aborting" >&2
+  exit 1
+fi
+
 run_backup() {
   REPO="$1"
   SOURCE="$2"
@@ -31,19 +38,19 @@ run_backup() {
 }
 
 run_backup \
-  /srv/samba/backup/samba \
+  "$BACKUP_ROOT/samba" \
   /srv/samba \
-  /srv/samba/backup
+  ""
 
 run_backup \
-  /srv/samba/backup/homeassistant \
+  "$BACKUP_ROOT/homeassistant" \
   "/srv/homeassistant/config /home-server/.env" \
   ""
 
 run_backup \
-  /srv/samba/backup/vaultwarden \
+  "$BACKUP_ROOT/vaultwarden" \
   /srv/vaultwarden \
   ""
 
 echo "==> Backup complete"
-chown -R pi:pi /srv/samba/backup
+chown -R pi:pi "$BACKUP_ROOT"

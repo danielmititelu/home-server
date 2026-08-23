@@ -51,14 +51,16 @@ Systemd services: `kodi`.
 
 ## Backups
 
-Backups are managed with restic and stored in `/srv/samba/backup/` (accessible via the samba share):
+Backups are managed with restic and stored on a dedicated USB SSD mounted at `/mnt/backup/`:
 
 ```
-backup/
+/mnt/backup/
   samba/           # restic repo for /srv/samba
   homeassistant/   # restic repo for /srv/homeassistant/config
   vaultwarden/     # restic repo for /srv/vaultwarden
 ```
+
+The SSD must be mounted at `/mnt/backup` (via `/etc/fstab`) for backups to run — `backup.sh` refuses to run if it isn't.
 
 Run manually with `metis backup`. Runs automatically every night at 2 AM via cron.
 Retention: daily for 7 days, weekly for 4 weeks, monthly for 12 months.
