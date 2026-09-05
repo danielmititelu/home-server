@@ -29,7 +29,6 @@ services.AddSingleton(TimeProvider.System);
 services.AddSingleton<DailyEntryRepository>();
 services.AddSingleton<WorkoutRepository>();
 services.AddSingleton<ExpenseRepository>();
-services.AddHttpClient<WeatherRepository>();
 services.AddTransient<DailyEntryService>();
 services.AddTransient<WorkoutService>();
 services.AddTransient<ExpenseService>();
@@ -37,4 +36,4 @@ services.AddTransient<VaultlingRunner>();
 
 var provider = services.BuildServiceProvider();
 
-await provider.GetRequiredService<VaultlingRunner>().RunAsync();
+provider.GetRequiredService<VaultlingRunner>().Run();

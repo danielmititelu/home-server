@@ -1,17 +1,9 @@
 namespace Vaultling.Services.Repositories;
 
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Vaultling.Utils;
 
-public partial class ExpenseRepository(IOptions<ExpenseOptions> options)
+public class ExpenseRepository(IOptions<ExpenseOptions> options)
 {
-    [GeneratedRegex(@"\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b\s*->\s*\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\b", RegexOptions.Compiled)]
-    private static partial Regex RangeDateInDescriptionRegex();
-
-    [GeneratedRegex(@"\s+\b(?:pe|at|on|in|la|spre|to)\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "")]
-    private static partial Regex ConnectorWordRegex();
-
     private readonly ExpenseOptions _options = options.Value;
     private List<ExpenseLog>? _cachedRecentExpenses;
 
@@ -53,35 +45,6 @@ public partial class ExpenseRepository(IOptions<ExpenseOptions> options)
     public void WriteExpenseReport(string markdown)
     {
         File.WriteAllText(_options.CurrentYearReportFile, markdown);
-    }
-
-    public string? GetTravelCityForDate(DateTime date)
-    {
-        foreach (var expense in ReadRecentExpenses())
-        {
-            var description = expense.Description.Trim();
-
-            var rangeMatch = RangeDateInDescriptionRegex().Match(description);
-            if (!rangeMatch.Success) continue;
-
-            if (!DateTime.TryParse(rangeMatch.Groups[1].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var depDate))
-                continue;
-            if (!DateTime.TryParse(rangeMatch.Groups[2].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var retDate))
-                continue;
-
-            if (date.Date < depDate.Date || date.Date >= retDate.Date) continue;
-
-            var notePart = description[..rangeMatch.Index];
-            notePart = ConnectorWordRegex().Replace(notePart, "").Trim();
-            if (string.IsNullOrEmpty(notePart)) continue;
-
-            var words = notePart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (words.Length == 0) continue;
-
-            return words[^1];
-        }
-
-        return null;
     }
 
     private static IEnumerable<ExpenseLog> ParseExpenseFile(string file, int year)

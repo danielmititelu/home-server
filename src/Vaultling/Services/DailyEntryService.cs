@@ -5,10 +5,9 @@ public class DailyEntryService(
     DailyEntryRepository dailyEntryRepository,
     WorkoutRepository workoutRepository,
     ExpenseRepository expenseRepository,
-    WeatherRepository weatherRepository,
     TimeProvider timeProvider)
 {
-    public async Task ProcessDailyEntryAsync()
+    public void ProcessDailyEntry()
     {
         var now = timeProvider.GetLocalNow();
         var todayDate = now.ToIsoDateString();
@@ -44,18 +43,13 @@ public class DailyEntryService(
         var carryOverTodos = yesterdayEntry.Todos
             .Where(t => !t.Contains("[x]", StringComparison.OrdinalIgnoreCase));
 
-        var city = yesterdayEntry.City;
-        var travelCity = expenseRepository.GetTravelCityForDate(now.Date);
-        var weather = await weatherRepository.FetchWeatherAsync(travelCity ?? city);
-
         var newTodayEntry = new DailyEntry(
             Date: now,
             Workouts: todayWorkouts,
             Todos: carryOverTodos,
-            Expenses: [],
-            City: city
+            Expenses: []
         );
-        var newTodayMarkdown = GenerateMarkdownForDailyEntry(newTodayEntry, weather);
+        var newTodayMarkdown = GenerateMarkdownForDailyEntry(newTodayEntry);
 
         workoutRepository.AppendWorkout(workoutLogs);
         expenseRepository.AppendExpenses(expenseLogs);
@@ -63,7 +57,7 @@ public class DailyEntryService(
         dailyEntryRepository.WriteDailyEntry(newTodayMarkdown);
     }
 
-    public static string GenerateMarkdownForDailyEntry(DailyEntry dailyEntry, WeatherInfo? weather = null)
+    public static string GenerateMarkdownForDailyEntry(DailyEntry dailyEntry)
     {
         var workoutLines = string.Join("\n", dailyEntry.Workouts.Select(w => $"{w.Exercise},{w.Reps}"));
         var todoItems = dailyEntry.Todos.ToList();
@@ -71,16 +65,9 @@ public class DailyEntryService(
             ? string.Join("\n", todoItems)
             : "- [ ]";
 
-        var weatherLines = weather is { Summary: not null, Sunrise: not null, Sunset: not null }
-            ? $"{weather.City}\n{weather.Summary}\n🌅 {weather.Sunrise} 🌇 {weather.Sunset}"
-            : dailyEntry.City;
-
         var markdown = $"""
             # {DailySectionName.Date}
             {dailyEntry.Date.ToIsoDateString()}
-
-            # {DailySectionName.Weather}
-            {weatherLines}
 
             # {DailySectionName.Workout}
             exercise,reps

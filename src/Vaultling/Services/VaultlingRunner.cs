@@ -5,12 +5,12 @@ public class VaultlingRunner(
     WorkoutService workoutService,
     ExpenseService expenseService)
 {
-    public async Task RunAsync()
+    public void Run()
     {
         try
         {
             Console.WriteLine("Vaultling started");
-            await dailyEntryService.ProcessDailyEntryAsync();
+            dailyEntryService.ProcessDailyEntry();
             workoutService.ProduceWorkoutReport();
             expenseService.ProduceExpenseReport();
         }

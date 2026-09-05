@@ -18,18 +18,8 @@ public class DailyEntryServiceTests
         return repo.ReadDailyEntry();
     }
 
-    private static WeatherRepository CreateStubWeatherRepository() =>
-        new WeatherRepository(new HttpClient(new StubHttpHandler()));
-
-    private sealed class StubHttpHandler : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable));
-    }
-
     [Fact]
-    public async Task ProcessDailyEntry_AppendsWorkoutAndExpenseLogs()
+    public void ProcessDailyEntry_AppendsWorkoutAndExpenseLogs()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-daily-{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
@@ -40,9 +30,6 @@ public class DailyEntryServiceTests
             File.WriteAllText(todayFile, """
                 # Date
                 2026-03-07
-
-                # Weather
-                Bucharest
 
                 # Workout
                 exercise,reps
@@ -83,10 +70,9 @@ public class DailyEntryServiceTests
                 {
                     CurrentYearDataFile = expenseFile
                 })),
-                CreateStubWeatherRepository(),
                 TimeProvider.System);
 
-            await service.ProcessDailyEntryAsync();
+            service.ProcessDailyEntry();
 
             var workouts = new WorkoutRepository(
                 Options.Create(new WorkoutOptions { CurrentYearLogFile = workoutLog }),
@@ -122,8 +108,7 @@ public class DailyEntryServiceTests
             Date: new DateTimeOffset(2026, 3, 7, 0, 0, 0, TimeSpan.Zero),
             Workouts: [new DailyWorkout("pushups", "20-20-20"), new DailyWorkout("squats", "20-20-20")],
             Todos: ["Buy milk", "[x] Clean kitchen"],
-            Expenses: [new DailyExpense("food", 45.50m, "groceries"), new DailyExpense("transport", 12.00m, "bus")],
-            City: "Bucharest");
+            Expenses: [new DailyExpense("food", 45.50m, "groceries"), new DailyExpense("transport", 12.00m, "bus")]);
 
         var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(original);
         var tempFile = Path.GetTempFileName();
@@ -134,7 +119,6 @@ public class DailyEntryServiceTests
         Assert.Equal(original.Date.Date, reparsed.Date.Date);
         Assert.Equal(original.Workouts.Count(), reparsed.Workouts.Count());
         Assert.Equal(original.Todos.Count(), reparsed.Todos.Count());
-        Assert.Equal(original.City, reparsed.City);
     }
 
     [Fact]
@@ -153,43 +137,7 @@ public class DailyEntryServiceTests
     }
 
     [Fact]
-    public void GenerateMarkdownForDailyEntry_IncludesWeatherInfo_WhenProvided()
-    {
-        var entry = new DailyEntry(
-            Date: new DateTimeOffset(2026, 4, 12, 9, 0, 0, TimeSpan.Zero),
-            Workouts: [],
-            Todos: [],
-            Expenses: [],
-            City: "Bucharest");
-        var weather = new WeatherInfo("Bucharest", "\u2600\ufe0f 18\u00b0C, Clear sky", "06:15", "19:50");
-
-        var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather);
-
-        Assert.Contains("# Weather", markdown);
-        Assert.Contains("Bucharest", markdown);
-        Assert.Contains("\u2600\ufe0f 18\u00b0C, Clear sky", markdown);
-        Assert.Contains("\ud83c\udf05 06:15 \ud83c\udf07 19:50", markdown);
-    }
-
-    [Fact]
-    public void GenerateMarkdownForDailyEntry_ShowsOnlyCity_WhenWeatherFetchFailed()
-    {
-        var entry = new DailyEntry(
-            Date: new DateTimeOffset(2026, 4, 12, 9, 0, 0, TimeSpan.Zero),
-            Workouts: [],
-            Todos: [],
-            Expenses: [],
-            City: "Bucharest");
-
-        var markdown = DailyEntryService.GenerateMarkdownForDailyEntry(entry, weather: null);
-
-        Assert.Contains("# Weather", markdown);
-        Assert.Contains("Bucharest", markdown);
-        Assert.DoesNotContain("\u00b0C", markdown);
-    }
-
-    [Fact]
-    public async Task ProcessDailyEntry_WeightedWorkout_NormalizesReps()
+    public void ProcessDailyEntry_WeightedWorkout_NormalizesReps()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"vaultling-weighted-{Guid.NewGuid()}");
         Directory.CreateDirectory(tempDir);
@@ -200,9 +148,6 @@ public class DailyEntryServiceTests
             File.WriteAllText(todayFile, """
                 # Date
                 2026-03-07
-
-                # Weather
-                Bucharest
 
                 # Workout
                 exercise,reps
@@ -239,10 +184,9 @@ public class DailyEntryServiceTests
                 {
                     CurrentYearDataFile = expenseFile
                 })),
-                CreateStubWeatherRepository(),
                 TimeProvider.System);
 
-            await service.ProcessDailyEntryAsync();
+            service.ProcessDailyEntry();
 
             var workouts = new WorkoutRepository(
                 Options.Create(new WorkoutOptions { CurrentYearLogFile = workoutLog }),
