@@ -13,6 +13,8 @@ if ! mountpoint -q "$BACKUP_ROOT"; then
   exit 1
 fi
 
+trap 'chown -R pi:pi "$BACKUP_ROOT"' EXIT
+
 run_backup() {
   REPO="$1"
   SOURCE="$2"
@@ -53,4 +55,3 @@ run_backup \
   ""
 
 echo "==> Backup complete"
-chown -R pi:pi "$BACKUP_ROOT"
