@@ -52,7 +52,7 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
         if (!File.Exists(file)) return [];
         return Utils.ParseCsv(File.ReadLines(file), parts =>
         {
-            if (parts.Length < 5
+            if (parts.Length < 4
                 || !int.TryParse(parts[0], out var month)
                 || !int.TryParse(parts[1], out var day)
                 || !decimal.TryParse(parts[3], System.Globalization.CultureInfo.InvariantCulture, out var amount))
@@ -60,7 +60,7 @@ public class ExpenseRepository(IOptions<ExpenseOptions> options)
                 Console.Error.WriteLine($"[ExpenseRepository] Skipping malformed row: '{string.Join(",", parts)}'");
                 return null;
             }
-            return new ExpenseLog(Year: year, Month: month, Day: day, Category: parts[2].ToLower(), Amount: amount, Description: parts[4]);
+            return new ExpenseLog(Year: year, Month: month, Day: day, Category: parts[2].ToLower(), Amount: amount, Description: parts.Length > 4 ? parts[4] : "");
         }).OfType<ExpenseLog>();
     }
 }

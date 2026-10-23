@@ -1,7 +1,7 @@
 namespace Vaultling.Models;
 
 public record DailyWorkout(string Exercise, string Reps);
-public record DailyExpense(string Category, decimal Amount, string Description);
+public record DailyExpense(string Category, decimal Amount, string Description = "");
 public enum DailySectionName
 {
     Date,

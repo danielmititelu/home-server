@@ -75,6 +75,21 @@ public class ExpenseRepositoryTests
     }
 
     [Fact]
+    public void ReadExpenses_RowWithoutDescription_IsValid()
+    {
+        var tempFile = WriteTempCsv("1,5,food,50", "1,6,food,20,");
+        try
+        {
+            var expenses = CreateRepository(tempFile).ReadCurrentYearExpenses().ToList();
+
+            Assert.Equal(2, expenses.Count);
+            Assert.All(expenses, e => Assert.Equal("", e.Description));
+            Assert.Equal(50m, expenses[0].Amount);
+        }
+        finally { File.Delete(tempFile); }
+    }
+
+    [Fact]
     public void AppendExpenses_ThenReadExpenses_RoundTrips()
     {
         var tempFile = WriteTempCsv();

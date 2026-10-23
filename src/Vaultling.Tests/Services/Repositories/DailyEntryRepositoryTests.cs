@@ -77,6 +77,24 @@ public class DailyEntryRepositoryTests
     }
 
     [Fact]
+    public void ReadDailyEntry_ExpenseWithoutDescription_IsValid()
+    {
+        var entry = ReadEntry("""
+            # Date
+            2026-03-07
+
+            # Expenses
+            category,amount,description
+            food,50
+            """);
+
+        var expense = Assert.Single(entry.Expenses);
+        Assert.Equal("food", expense.Category);
+        Assert.Equal(50m, expense.Amount);
+        Assert.Equal("", expense.Description);
+    }
+
+    [Fact]
     public void ReadDailyEntry_ReadsTodos()
     {
         var todos = ReadEntry(SampleEntry).Todos.ToList();
