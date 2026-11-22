@@ -46,6 +46,7 @@ mkdir -p \
   /srv/qbittorrent/appdata \
   /srv/downloads \
   /srv/syncthing \
+  /srv/beszel/data \
   /srv/glance/assets \
   /srv/caddy/config \
   /srv/caddy/data

@@ -44,7 +44,7 @@ metis vaultling           # Run Vaultling (Obsidian vault processor)
 metis init                # Bootstrap a fresh Raspberry Pi
 ```
 
-Service names for containers: `caddy`, `glance`, `homeassistant`, `vaultwarden`, `qbittorrent`, `syncthing`, `pihole`.
+Service names for containers: `caddy`, `glance`, `homeassistant`, `vaultwarden`, `qbittorrent`, `syncthing`, `beszel`, `pihole`.
 Systemd services: `kodi`.
 
 ---

@@ -1,0 +1,11 @@
+services:
+  beszel:
+    image: henrygd/beszel
+    container_name: beszel
+    restart: unless-stopped
+    environment:
+      APP_URL: "https://beszel.home"
+    volumes:
+      - /srv/beszel/data:/beszel_data
+    networks:
+      - appnet

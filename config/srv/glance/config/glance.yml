@@ -28,6 +28,10 @@ pages:
                 url: http://192.168.1.199:8384
                 check-url: http://syncthing:8384
                 icon: sh:syncthing
+              - title: beszel
+                url: https://beszel.home
+                check-url: http://beszel:8090
+                icon: sh:beszel
               - title: openwrt
                 url: http://192.168.1.1
                 check-url: http://192.168.1.1

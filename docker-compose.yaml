@@ -6,6 +6,7 @@ include:
     - docker/qbittorrent.yaml
     - docker/vaultwarden.yaml
     - docker/syncthing.yaml
+    - docker/beszel.yaml
 
 networks:
   appnet:
