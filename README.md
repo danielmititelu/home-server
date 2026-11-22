@@ -39,8 +39,11 @@ metis restart <container|service> # Restart a container or systemd service
 metis logs <container|service>    # Follow logs (Ctrl+C to stop)
 metis status              # Show CPU usage, memory and temperature
 metis sync                # Symlink config files into the system
-metis backup              # Run restic backups (samba, homeassistant, vaultwarden)
+metis backup              # Run restic backups (samba, homeassistant, vaultwarden, beszel)
 metis vaultling           # Run Vaultling (Obsidian vault processor)
+metis update system       # Upgrade system packages with apt
+metis update docker [container]   # Pull newer images and recreate containers (all if none given)
+metis prune               # List containers, then ask before removing all unused Docker images
 metis init                # Bootstrap a fresh Raspberry Pi
 ```
 
@@ -58,6 +61,7 @@ Backups are managed with restic and stored on a dedicated USB SSD mounted at `/m
   samba/           # restic repo for /srv/samba
   homeassistant/   # restic repo for /srv/homeassistant/config
   vaultwarden/     # restic repo for /srv/vaultwarden
+  beszel/          # restic repo for /srv/beszel/data
 ```
 
 The SSD must be mounted at `/mnt/backup` (via `/etc/fstab`) for backups to run — `backup.sh` refuses to run if it isn't.

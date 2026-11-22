@@ -8,7 +8,8 @@ usage() {
   echo "       metis sync"
   echo "       metis backup"
   echo "       metis vaultling"
-  echo "       metis update"
+  echo "       metis update <system|docker [container]>"
+  echo "       metis prune"
   echo "       metis init"
   exit 1
 }
@@ -49,6 +50,29 @@ logs() {
   else docker compose -f "$COMPOSE_DIR/docker-compose.yaml" logs -f "$SERVICE"; fi
 }
 
+update() {
+  case "$1" in
+    system) sudo apt update && sudo apt full-upgrade -y ;;
+    docker)
+      docker compose -f "$COMPOSE_DIR/docker-compose.yaml" pull ${2:+"$2"} &&
+        docker compose -f "$COMPOSE_DIR/docker-compose.yaml" up -d ${2:+"$2"}
+      ;;
+    *) usage ;;
+  esac
+}
+
+prune() {
+  echo "Images used by these containers will be kept:"
+  docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
+  echo
+  printf "Remove all other Docker images? (y/N): "
+  read -r answer
+  case "$answer" in
+    y|Y) docker image prune -a -f ;;
+    *)   echo "Nothing removed" ;;
+  esac
+}
+
 [ $# -lt 1 ] && usage
 
 COMMAND="$1"
@@ -69,7 +93,8 @@ case "$COMMAND" in
   sync)      /home-server/scripts/sync.sh ;;
   backup)    /home-server/scripts/backup.sh ;;
   vaultling) vaultling ;;
-  update)    sudo apt update && sudo apt upgrade -y ;;
+  update)    update "$2" "$3" ;;
+  prune)     prune ;;
   init)      /home-server/scripts/init.sh ;;
   *)         usage ;;
 esac

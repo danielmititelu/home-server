@@ -54,4 +54,9 @@ run_backup \
   /srv/vaultwarden \
   ""
 
+run_backup \
+  "$BACKUP_ROOT/beszel" \
+  /srv/beszel/data \
+  ""
+
 echo "==> Backup complete"
