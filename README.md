@@ -113,4 +113,20 @@ sudo usermod -a -G groupname username
 sudo apt install pulseaudio -y
 pulseaudio --start
 ```
+### How to update beszel agent
+
+On the Pi and the printer:
+```
+sudo /opt/beszel-agent/beszel-agent update
+```
+
+On the router (OpenWrt):
+```
+/etc/init.d/beszel-agent update
+```
+
+Check the installed version with 
+```
+/opt/beszel-agent/beszel-agent --version
+```
 
