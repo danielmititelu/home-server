@@ -36,6 +36,22 @@ fi
 LOG "Adding pi to docker group"
 usermod -aG docker pi || true
 
+# ----- Container memory stats -----
+
+# Raspberry Pi OS boots with the memory cgroup disabled, so Docker reports
+# 0B of memory per container. The kernel command line must stay on one line.
+CMDLINE_FILE=/boot/firmware/cmdline.txt
+
+if [ ! -f "$CMDLINE_FILE" ]; then
+  WARN "$CMDLINE_FILE not found, skipping container memory stats"
+elif grep -q "cgroup_enable=memory" "$CMDLINE_FILE"; then
+  LOG "Container memory stats already enabled, skipping"
+else
+  LOG "Enabling container memory stats"
+  sed -i '1s/[[:space:]]*$/ cgroup_enable=memory cgroup_memory=1/' "$CMDLINE_FILE"
+  REBOOT_NEEDED=1
+fi
+
 # ----- /srv folder layout -----
 
 LOG "Creating /srv folder layout"
@@ -91,3 +107,6 @@ echo "Next steps:"
 echo "  1. Fill in /home-server/.env"
 echo "  2. Start containers: metis up <service>"
 WARN "Log out and back in (or reboot) for pi to use Docker without sudo"
+if [ "$REBOOT_NEEDED" = 1 ]; then
+  WARN "Reboot to enable container memory stats"
+fi

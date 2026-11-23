@@ -24,7 +24,7 @@ RESTIC_PASSWORD=
 metis start <service>
 ```
 
-5. Log out and back in (or reboot) for `pi` to use Docker without sudo.
+5. Reboot, so `pi` can use Docker without sudo and container memory stats are enabled.
 
 ---
 
